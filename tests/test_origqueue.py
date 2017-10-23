@@ -14,7 +14,7 @@ class TestQueue(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'e83df36bebbe-1507019160.61',
                 'caller': CallerId(code=0, number='+31150010002', is_public=True),
-                'callee': CallerId(code=150010001, number='+31150010004', is_public=True),
+                'targets': [CallerId(code=150010001, number='+31150010004', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'e83df36bebbe-1507019160.61',

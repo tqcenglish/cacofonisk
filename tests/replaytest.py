@@ -16,12 +16,14 @@ class TestReporter(BaseReporter):
         super(TestReporter, self).__init__()
         self.events = []
 
-    def on_b_dial(self, call_id, caller, callee):
+    def on_b_dial(self, call_id, caller, targets):
+        targets.sort(key=lambda callee: callee.code)
+
         self.events.append({
             'event': 'on_b_dial',
             'call_id': call_id,
             'caller': caller,
-            'callee': callee,
+            'targets': targets,
         })
 
     def on_transfer(self, new_id, merged_id, redirector, party1, party2):
@@ -34,20 +36,24 @@ class TestReporter(BaseReporter):
             'merged_id': merged_id,
         })
 
-    def on_up(self, call_id, caller, callee):
+    def on_up(self, call_id, caller, callee, hangups):
+        hangups.sort(key=lambda hangup: hangup[0].code)
+
         self.events.append({
             'event': 'on_up',
             'caller': caller,
             'callee': callee,
+            'hangups': hangups,
             'call_id': call_id,
         })
 
-    def on_hangup(self, call_id, caller, callee, reason):
+    def on_hangup(self, call_id, caller, hangups):
+        hangups.sort(key=lambda hangup: hangup[0].code)
+
         self.events.append({
             'event': 'on_hangup',
             'caller': caller,
-            'callee': callee,
-            'reason': reason,
+            'hangups': hangups,
             'call_id': call_id,
         })
 
