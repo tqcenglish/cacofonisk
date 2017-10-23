@@ -20,12 +20,12 @@ class TestQueue(ChannelEventsTestCase):
                 'call_id': 'e83df36bebbe-1507019160.61',
                 'caller': CallerId(code=0, number='+31150010002', is_public=True),
                 'callee': CallerId(code=150010001, number='+31150010004', is_public=True),
+                'hangups': [],
             }),
             ('on_hangup', {
                 'call_id': 'e83df36bebbe-1507019160.61',
                 'caller': CallerId(code=0, number='+31150010002', is_public=True),
-                'callee': CallerId(code=150010001, number='+31150010004', is_public=True),
-                'reason': 'completed',
+                'hangups': [(CallerId(code=150010001, number='+31150010004', is_public=True), 'completed')],
             }),
         ))
 
@@ -41,29 +41,26 @@ class TestQueue(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'e83df36bebbe-1507022898.69',
                 'caller': CallerId(code=0, number='+31150010002', is_public=True),
-                'callee': CallerId(code=150010001, number='+31150010004', is_public=True),
-            }),
-            ('on_b_dial', {
-                'call_id': 'e83df36bebbe-1507022898.69',
-                'caller': CallerId(code=0, number='+31150010002', is_public=True),
-                'callee': CallerId(code=150010003, number='+31150010004', is_public=True),
+                'targets': [
+                    CallerId(code=150010001, number='+31150010004', is_public=True),
+                    CallerId(code=150010003, number='+31150010004', is_public=True),
+                ],
             }),
             ('on_up', {
                 'call_id': 'e83df36bebbe-1507022898.69',
                 'caller': CallerId(code=0, number='+31150010002', is_public=True),
                 'callee': CallerId(code=150010003, number='+31150010004', is_public=True),
+                'hangups': [
+                    (CallerId(code=150010001, number='+31150010004', is_public=True), 'answered-elsewhere'),
+                ],
             }),
             ('on_hangup', {
                 'call_id': 'e83df36bebbe-1507022898.69',
                 'caller': CallerId(code=0, number='+31150010002', is_public=True),
-                'callee': CallerId(code=150010001, number='+31150010004', is_public=True),
-                'reason': 'answered-elsewhere',
-            }),
-            ('on_hangup', {
-                'call_id': 'e83df36bebbe-1507022898.69',
-                'caller': CallerId(code=0, number='+31150010002', is_public=True),
-                'callee': CallerId(code=150010003, number='+31150010004', is_public=True),
-                'reason': 'completed',
+                'hangups': [
+                    (CallerId(code=150010001, number='+31150010004', is_public=True), 'answered-elsewhere'),
+                    (CallerId(code=150010003, number='+31150010004', is_public=True), 'completed')
+                ],
             }),
         ))
 

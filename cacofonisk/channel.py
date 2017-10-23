@@ -101,9 +101,6 @@ class Channel(object):
         self._accountcode = event['AccountCode']
         self._exten = event['Exten']
 
-        self.fwd_queue_agents = []
-        self.back_queue_caller = None
-
         self._hangups = set()
 
         # If this is a SIP/<accountcode>- channel, then this is an
@@ -351,11 +348,6 @@ class Channel(object):
             self.back_dial.fwd_dials.remove(self)
             self.back_dial = None
 
-        # Remove the queue agent connections.
-        if self.back_queue_caller:
-            self.back_queue_caller.fwd_queue_agents.remove(self)
-            self.back_queue_caller = None
-
         # Assert that there are no bridged channels.
         assert not self._bridged, self._bridged
 
@@ -466,9 +458,6 @@ class Channel(object):
         if self.back_dial:
             # Check if we are being dialed.
             a_chan = self.back_dial
-        elif self.back_queue_caller:
-            # Check if we are being called as an agent.
-            a_chan = self.back_queue_caller
         else:
             # This is the root channel.
             a_chan = None
@@ -845,10 +834,10 @@ class ChannelManager(object):
             source = self._registry.get_by_name(event['ChannelCalling'])
             target = self._registry.get_by_name(event['DestinationChannel'])
 
-            assert not target.back_queue_caller
+            assert not target.back_dial
 
-            source.fwd_queue_agents.append(target)
-            target.back_queue_caller = source
+            source.fwd_dials.append(target)
+            target.back_dial = source
 
         elif event_name == 'UserEvent':
             self.on_user_event(event)
@@ -1080,10 +1069,10 @@ class ChannelManager(object):
         if channel.is_relevant:
             # This is a SIP/ channel being disconnected. Let's figure
             # out if this our A side or B side.
-            if channel.back_dial or channel.back_queue_caller:
+            if channel.back_dial:
                 # Channel has back dials, so channel is B.
                 self._send_hangup_notifications_for_channels(channel.get_dialing_channel(), channel, event)
-            elif channel.fwd_dials or channel.fwd_queue_agents:
+            elif channel.fwd_dials:
                 # Channel has forward dials, so channel is A.
                 for b_chan in channel.get_dialed_channels():
                     self._send_hangup_notifications_for_channels(channel, b_chan, event)
