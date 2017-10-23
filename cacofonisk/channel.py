@@ -1129,6 +1129,13 @@ class ChannelManager(object):
                     a_chan.custom['call_forwarding_transfer'] = b_chan
                     return
 
+            if b_chan.state < AST_STATE_RING:
+                # This is a call where the b_chan has not yet come up. This
+                # could happen if the callee is unavailable (e.g. the phone is
+                # unplugged). For the sake of consistency, let's send a dial so
+                # it looks like the phone rang before.
+                self.on_b_dial(a_chan.uniqueid, a_chan.callerid, b_chan.callerid)
+
             # Map the Asterisk hangup causes to easy to understand strings.
             # See https://wiki.asterisk.org/wiki/display/AST/Hangup+Cause+Mappings
             if hangup_cause == AST_CAUSE_NORMAL_CLEARING:
