@@ -241,3 +241,48 @@ class TestBlindXferOrig(ChannelEventsTestCase):
         ))
 
         self.assertEqual(expected_events, events)
+
+    def test_xfer_blind_reject(self):
+        """
+        Test a blind transfer from where the target rejects the transfer.
+        """
+        events = self.run_and_get_events('fixtures/xfer_blind/xfer_blind_reject.json')
+
+        expected_events = self.events_from_tuples((
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509116084.19',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'targets': [CallerId(code=150010004, number='204', is_public=True)],
+            }),
+            ('on_up', {
+                'call_id': '0f00dcaa884f-1509116084.19',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'callee': CallerId(code=150010004, number='204', is_public=True),
+            }),
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509116084.20',
+                'caller': CallerId(code=150010004, number='204', is_public=True),
+                'targets': [CallerId(code=150010003, number='203', is_public=True)],
+            }),
+            ('on_blind_transfer', {
+                'redirector': CallerId(code=150010004, number='204', is_public=True),
+                'party1': CallerId(code=150010002, number='202', is_public=True),
+                'targets': [CallerId(code=150010003, number='203', is_public=True)],
+                'new_id': '0f00dcaa884f-1509116084.19',
+                'merged_id': '0f00dcaa884f-1509116084.20',
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509116084.20',
+                'caller': CallerId(code=150010004, number='204', is_public=True),
+                'callee': CallerId(code=150010003, number='203', is_public=True),
+                'reason': 'transferred',
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509116084.19',
+                'caller': CallerId(code=150010002, number='202', is_public=True),
+                'callee': CallerId(code=150010003, number='203', is_public=True),
+                'reason': 'rejected',
+            }),
+        ))
+
+        self.assertEqual(expected_events, events)
