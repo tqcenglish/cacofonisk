@@ -295,14 +295,6 @@ class TestBlindXferOrig(ChannelEventsTestCase):
                 'new_id': '0f00dcaa884f-1509117819.36',
                 'merged_id': '0f00dcaa884f-1509117819.37',
             }),
-            ('on_b_dial', {
-                'call_id': '0f00dcaa884f-1509117819.36',
-                'caller': CallerId(code=150010002, number='202', is_public=True),
-                'targets': [
-                    CallerId(code=150010001, number='403', is_public=True),
-                    CallerId(code=150010003, number='403', is_public=True),
-                ],
-            }),
             ('on_up', {
                 'call_id': '0f00dcaa884f-1509117819.36',
                 'caller': CallerId(code=150010002, number='202', is_public=True),

@@ -862,6 +862,12 @@ class ChannelManager(object):
             channel (Channel): The channel of the B side.
         """
         if channel.is_sip:
+            if 'ignore_b_dial' in channel.custom:
+                # Notifications were already sent for this channel.
+                # Unset the flag and move on.
+                del (channel.custom['ignore_b_dial'])
+                return
+
             a_chan = channel.get_dialing_channel()
 
             if 'raw_blind_transfer' in a_chan.custom:
@@ -873,7 +879,15 @@ class ChannelManager(object):
 
                 redirector = redirector_chan.callerid
                 party1 = a_chan.callerid
-                targets = [party.callerid for party in a_chan.get_dialed_channels()]
+                target_chans = a_chan.get_dialed_channels()
+                targets = [party.callerid for party in target_chans]
+
+                for target in target_chans:
+                    # To prevent notifications from being sent multiple times,
+                    # we set a flag on all other channels except for the one
+                    # starting to ring right now.
+                    if target != channel:
+                        target.custom['ignore_b_dial'] = True
 
                 # We're going to want to simulate a pre-flight dial event for
                 # consistency with attended transfers. In this dial, the
@@ -924,10 +938,17 @@ class ChannelManager(object):
                 # only send an event for the channel with the lowest uniqueid.
                 # if not a_chan.is_up:
                 open_dials = a_chan.get_dialed_channels()
+                targets = [dial.callerid for dial in open_dials]
 
-                if open_dials and min([dial.uniqueid for dial in open_dials]) == channel.uniqueid:
-                    targets = [dial.callerid for dial in open_dials]
-                    self.on_b_dial(a_chan.uniqueid, a_chan.callerid, targets)
+                for b_chan in open_dials:
+                    if b_chan == channel:
+                        # Ensure a notification is only sent once.
+                        self.on_b_dial(a_chan.uniqueid, a_chan.callerid, targets)
+                    else:
+                        # To prevent notifications from being sent multiple times,
+                        # we set a flag on all other channels except for the one
+                        # starting to ring right now.
+                        b_chan.custom['ignore_b_dial'] = True
 
     def _raw_attended_transfer(self, channel, target):
         """
