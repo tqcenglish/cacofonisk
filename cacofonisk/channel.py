@@ -1073,6 +1073,20 @@ class ChannelManager(object):
                 # Channel has forward dials, so channel is A.
                 for b_chan in channel.get_dialed_channels():
                     self._send_hangup_notifications_for_channels(channel, b_chan, event)
+            elif 'raw_blind_transfer' in channel.custom:
+                # Panic! This channel had a blind transfer coming up but it's
+                # being hung up! That probably means the blind transfer target
+                # could not be reached.
+                # Ideally, we would simulate a full blind transfer having been
+                # completed but hanged up with an error. However, no channel
+                # to the third party has been created.
+                redirector, side = channel.custom.pop('raw_blind_transfer')
+
+                # TODO: Maybe give another status code than 'completed' here?
+                if side == 'A':
+                    self.on_hangup(redirector.uniqueid, redirector.callerid, channel.callerid, 'completed')
+                else:
+                    self.on_hangup(channel.uniqueid, channel.callerid, redirector.callerid, 'completed')
             else:
                 # This SIP/ channel does not have any dials, which means
                 # it's probably one of the last ones to be removed.
