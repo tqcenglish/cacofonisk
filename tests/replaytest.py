@@ -37,6 +37,8 @@ class TestReporter(BaseReporter):
         })
 
     def on_blind_transfer(self, call_id, merged_id, redirector, party1, targets):
+        targets.sort(key=lambda callee: callee.code)
+
         self.events.append({
             'event': 'on_blind_transfer',
             'redirector': redirector,
@@ -47,6 +49,8 @@ class TestReporter(BaseReporter):
         })
 
     def on_forward(self, call_id, caller, loser, targets):
+        targets.sort(key=lambda callee: callee.code)
+
         self.events.append({
             'event': 'on_forward',
             'call_id': call_id,

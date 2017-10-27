@@ -98,7 +98,8 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
         self.assertEqual(expected_events, events)
 
     def test_xfer_blondeanon(self):
-        """Complex test of blonde transfer.
+        """
+        Complex test of blonde transfer.
 
         Test call groups, anonymous callers and a blond transfer.
         """
@@ -239,6 +240,94 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'call_id': 'vgua0-dev-1443442620.82',
                 'caller': CallerId(number='P', is_public=False),  # Technically +31507xxxxxx
                 'callee': CallerId(code=126680005, number='205', is_public=True),
+                'reason': 'completed',
+            }),
+        ))
+
+        self.assertEqual(expected_events, events)
+
+    def test_xfer_blonde_reject(self):
+        """
+        Test blonde transfer where the transfer target rejects the call.
+        """
+        events = self.run_and_get_events('fixtures/xfer_blonde/xfer_blonde_reject.json')
+
+        expected_events = self.events_from_tuples((
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509119790.66',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'targets': [CallerId(code=150010004, number='204', is_public=True)],
+            }),
+            ('on_up', {
+                'call_id': '0f00dcaa884f-1509119790.66',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'callee': CallerId(code=150010004, number='204', is_public=True),
+            }),
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509119799.70',
+                'caller': CallerId(code=150010004, name='Jonathan Carey', number='204', is_public=True),
+                'targets': [CallerId(code=150010003, number='203', is_public=True)],
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509119799.70',
+                'caller': CallerId(code=150010004, name='Jonathan Carey', number='204', is_public=True),
+                'callee': CallerId(code=150010003, number='203', is_public=True),
+                'reason': 'rejected',
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509119790.66',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'callee': CallerId(code=150010004, number='204', is_public=True),
+                'reason': 'completed',
+            }),
+        ))
+
+        self.assertEqual(expected_events, events)
+
+    def test_xfer_blonde_group(self):
+        """
+        Test blonde transfer where the transfer target rejects the call.
+        """
+        events = self.run_and_get_events('fixtures/xfer_blonde/xfer_blonde_group.json')
+
+        expected_events = self.events_from_tuples((
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509120252.74',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'targets': [CallerId(code=150010004, number='204', is_public=True)],
+            }),
+            ('on_up', {
+                'call_id': '0f00dcaa884f-1509120252.74',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'callee': CallerId(code=150010004, number='204', is_public=True),
+            }),
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509120257.78',
+                'caller': CallerId(code=150010004, name='Jonathan Carey', number='204', is_public=True),
+                'targets': [
+                    CallerId(code=150010001, number='403', is_public=True),
+                    CallerId(code=150010003, number='403', is_public=True),
+                ],
+            }),
+            ('on_blind_transfer', {
+                'new_id': '0f00dcaa884f-1509120257.78',
+                'merged_id': '0f00dcaa884f-1509120252.74',
+                'redirector': CallerId(code=150010004, name='Jonathan Carey', number='204', is_public=True),
+                'party1': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'targets': [
+                    CallerId(code=150010001, number='403', is_public=True),
+                    CallerId(code=150010003, number='403', is_public=True),
+                ],
+            }),
+            ('on_up', {
+                'call_id': '0f00dcaa884f-1509120257.78',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'callee': CallerId(code=150010001, number='403', is_public=True),
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509120257.78',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'callee': CallerId(code=150010001, number='403', is_public=True),
                 'reason': 'completed',
             }),
         ))

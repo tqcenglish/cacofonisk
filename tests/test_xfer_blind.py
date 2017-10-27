@@ -317,3 +317,30 @@ class TestBlindXferOrig(ChannelEventsTestCase):
         ))
 
         self.assertEqual(expected_events, events)
+
+    def test_xfer_blind_group_no_answer(self):
+        """
+        Test a blind transfer where the call is transferred to a group.
+        """
+        events = self.run_and_get_events('fixtures/xfer_blind/xfer_blind_group_no_answer.json')
+
+        expected_events = self.events_from_tuples((
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509119608.56',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'targets': [CallerId(code=150010004, number='204', is_public=True)],
+            }),
+            ('on_up', {
+                'call_id': '0f00dcaa884f-1509119608.56',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'callee': CallerId(code=150010004, number='204', is_public=True),
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509119608.56',
+                'caller': CallerId(code=150010002, number='202', is_public=True),
+                'callee': CallerId(code=150010004, number='204', is_public=True),
+                'reason': 'completed',
+            }),
+        ))
+
+        self.assertEqual(expected_events, events)
