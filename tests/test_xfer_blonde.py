@@ -13,7 +13,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
         """
         Test blonde transfer where A initiates the transfer.
         """
-        events = self.run_and_get_events('examples/orig/xfer_blonde_abacbc.json')
+        events = self.run_and_get_events('fixtures/xfer_blonde/xfer_blonde_abacbc.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -31,10 +31,10 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
-            ('on_transfer', {
+            ('on_blind_transfer', {
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'party1': CallerId(code=150010001, number='201', is_public=True),
-                'party2': [CallerId(code=150010003, number='203', is_public=True)],
+                'targets': [CallerId(code=150010003, number='203', is_public=True)],
                 'new_id': '63f2f9ce924a-1502178076.20',
                 'merged_id': '63f2f9ce924a-1502178068.16',
             }),
@@ -63,7 +63,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
         """
         Test blonde transfer where B initiates the transfer.
         """
-        events = self.run_and_get_events('examples/orig/xfer_blonde_abbcac.json')
+        events = self.run_and_get_events('fixtures/xfer_blonde/xfer_blonde_abbcac.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -81,10 +81,10 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'targets': [CallerId(code=150010001, name='', number='201', is_public=True)],
             }),
-            ('on_transfer', {
+            ('on_blind_transfer', {
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'party1': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
-                'party2': [CallerId(code=150010001, name='', number='201', is_public=True)],
+                'targets': [CallerId(code=150010001, name='', number='201', is_public=True)],
                 'new_id': '63f2f9ce924a-1502179195.28',
                 'merged_id': '63f2f9ce924a-1502179190.24',
             }),
@@ -114,7 +114,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
 
         Test call groups, anonymous callers and a blond transfer.
         """
-        events = self.run_and_get_events('examples/orig/xfer_blondeanon.json')
+        events = self.run_and_get_events('fixtures/xfer_blonde/xfer_blondeanon.json')
 
         expected_events = self.events_from_tuples((
             # +31507xxxxxx calls 202/205, 205 picks up, blonde xfer to 202
@@ -141,10 +141,10 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'caller': CallerId(code=126680005, name='No NAT', number='205', is_public=True),
                 'targets': [CallerId(code=126680002, number='202', is_public=True)],
             }),
-            ('on_transfer', {
+            ('on_blind_transfer', {
                 'redirector': CallerId(code=126680005, name='No NAT', number='205', is_public=True),
                 'party1': CallerId(number='+31507xxxxxx', is_public=False),
-                'party2': [CallerId(code=126680002, number='202', is_public=True)],
+                'targets': [CallerId(code=126680002, number='202', is_public=True)],
                 'new_id': 'vgua0-dev-1443448784.120',
                 'merged_id': 'vgua0-dev-1443448768.113',
             }),
@@ -191,7 +191,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
         The call IDs are a mess now, but fixing it is too complicated
         for a severely outdated phone.
         """
-        events = self.run_and_get_events('examples/orig/xfer_blondeblindanon.json')
+        events = self.run_and_get_events('fixtures/xfer_blonde/xfer_blondeblindanon.json')
 
         expected_events = self.events_from_tuples((
             # +31507xxxxxx calls 201/202/+31612345678
@@ -243,10 +243,10 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             # Again, the CLI-num for 126680002 is okay.
             # Ideally, I'd like to see +31507xxxxxx in CLI-num, but I
             # can live with 'P', since the is_public is False anyway.
-            ('on_transfer', {
+            ('on_blind_transfer', {
                 'redirector': CallerId(code=126680002, number='+31507001918', is_public=True),
                 'party1': CallerId(number='P', is_public=False),  # +31507xxxxxx ?
-                'party2': CallerId(code=126680005, number='205', is_public=True),
+                'targets': [CallerId(code=126680005, number='205', is_public=True)],
                 'new_id': 'vgua0-dev-1443442620.82',
                 'merged_id': 'vgua0-dev-1443442620.85',
             }),

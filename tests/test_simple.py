@@ -9,7 +9,7 @@ class TestSimpleOrig(ChannelEventsTestCase):
 
         202 calls 203, 203 picks up and later the call is disconnected.
         """
-        events = self.run_and_get_events('examples/orig/ab_success.json')
+        events = self.run_and_get_events('fixtures/simple/ab_success.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -35,7 +35,7 @@ class TestSimpleOrig(ChannelEventsTestCase):
     def test_ab_busy(self):
         """Test a simple call where B is busy.
         """
-        events = self.run_and_get_events('examples/orig/ab_busy.json')
+        events = self.run_and_get_events('fixtures/simple/ab_busy.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -58,7 +58,7 @@ class TestSimpleOrig(ChannelEventsTestCase):
 
         +315080xxxxx calls +31612345678 picks up, accepts the call by pressing 1, and later the call is disconnected.
         """
-        events = self.run_and_get_events('examples/orig/ab_acceptance.json')
+        events = self.run_and_get_events('fixtures/simple/ab_acceptance.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -86,7 +86,7 @@ class TestSimpleOrig(ChannelEventsTestCase):
 
         +315080xxxxx calls +31613925xxx picks up, does NOT accept the call, and later the call is disconnected.
         """
-        events = self.run_and_get_events('examples/orig/ab_noacceptance.json')
+        events = self.run_and_get_events('fixtures/simple/ab_noacceptance.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -107,7 +107,7 @@ class TestSimpleOrig(ChannelEventsTestCase):
     def test_ab_callgroup(self):
         """Test a simple call to a group where one phone is picked up.
         """
-        events = self.run_and_get_events('examples/orig/ab_callgroup.json')
+        events = self.run_and_get_events('fixtures/simple/ab_callgroup.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -137,7 +137,7 @@ class TestSimpleOrig(ChannelEventsTestCase):
         """
         Test a call where A hangs up before B can pick up.
         """
-        events = self.run_and_get_events('examples/orig/ab_a_cancel_hangup.json')
+        events = self.run_and_get_events('fixtures/simple/ab_a_cancel_hangup.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -159,7 +159,7 @@ class TestSimpleOrig(ChannelEventsTestCase):
         """
         Test a call where A hangs up after being connected to B.
         """
-        events = self.run_and_get_events('examples/orig/ab_a_success_hangup.json')
+        events = self.run_and_get_events('fixtures/simple/ab_a_success_hangup.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {

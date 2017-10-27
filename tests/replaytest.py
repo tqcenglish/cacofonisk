@@ -26,14 +26,33 @@ class TestReporter(BaseReporter):
             'targets': targets,
         })
 
-    def on_transfer(self, new_id, merged_id, redirector, party1, party2):
+    def on_attended_transfer(self, new_id, merged_id, redirector, party1, party2):
         self.events.append({
-            'event': 'on_transfer',
+            'event': 'on_attended_transfer',
             'redirector': redirector,
             'party1': party1,
             'party2': party2,
             'new_id': new_id,
             'merged_id': merged_id,
+        })
+
+    def on_blind_transfer(self, call_id, merged_id, redirector, party1, targets):
+        self.events.append({
+            'event': 'on_blind_transfer',
+            'redirector': redirector,
+            'party1': party1,
+            'targets': targets,
+            'new_id': call_id,
+            'merged_id': merged_id,
+        })
+
+    def on_forward(self, call_id, caller, loser, targets):
+        self.events.append({
+            'event': 'on_forward',
+            'call_id': call_id,
+            'caller': caller,
+            'loser': loser,
+            'targets': targets,
         })
 
     def on_up(self, call_id, caller, callee):

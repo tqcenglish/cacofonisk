@@ -16,7 +16,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
         happened:
         - 201 joins the other channels (202 <--> 203)
         """
-        events = self.run_and_get_events('examples/orig/xfer_abacbc.json')
+        events = self.run_and_get_events('fixtures/xfer_attended/xfer_abacbc.json')
 
         expected_events = self.events_from_tuples((
             # 201 calls 202
@@ -44,10 +44,10 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             }),
 
             # 201 transfers 202 <-> 203
-            ('on_transfer', {
+            ('on_attended_transfer', {
                 'redirector': CallerId(code=126680001, number='201', is_public=True),
                 'party1': CallerId(code=126680002, number='202', is_public=True),
-                'party2': [CallerId(code=126680003, number='203', is_public=True)],
+                'party2': CallerId(code=126680003, number='203', is_public=True),
                 'new_id': 'vgua0-dev-1442387091.556',
                 'merged_id': 'vgua0-dev-1442387090.552',
             }),
@@ -82,7 +82,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
         happened:
         - 201 joins the other channels (+31501234567 <--> 202)
         """
-        events = self.run_and_get_events('examples/orig/xfer_abbcac.json')
+        events = self.run_and_get_events('fixtures/xfer_attended/xfer_abbcac.json')
 
         expected_events = self.events_from_tuples((
             # +31501234567 calls 201
@@ -110,10 +110,10 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             }),
 
             # 201 transfers +31501234567 <-> 202
-            ('on_transfer', {
+            ('on_attended_transfer', {
                 'redirector': CallerId(code=126680001, number='201', is_public=True),
                 'party1': CallerId(code=0, name='Foo bar', number='+31501234567', is_public=True),
-                'party2': [CallerId(code=126680002, number='202', is_public=True)],
+                'party2': CallerId(code=126680002, number='202', is_public=True),
                 'new_id': 'vgua0-dev-1442387044.548',
                 'merged_id': 'vgua0-dev-1442387041.544',
             }),
@@ -130,6 +130,56 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1442387044.548',
                 'caller': CallerId(code=0, name='Foo bar', number='+31501234567', is_public=True),
+                'callee': CallerId(code=126680002, number='202', is_public=True),
+                'reason': 'completed',
+            }),
+        ))
+
+        self.assertEqual(expected_events, events)
+
+    def test_xfer_abbcac_anonymous(self):
+        """
+        Test that an attended transfer where the caller is anonymous works.
+        """
+        events = self.run_and_get_events('fixtures/xfer_attended/xfer_abbcac_anonymous.json')
+
+        expected_events = self.events_from_tuples((
+            ('on_b_dial', {
+                'call_id': 'vgua0-dev-1444635717.1178',
+                'caller': CallerId(code=0, name='Foo bar', number='+31501xxxxxx', is_public=False),
+                'targets': [CallerId(code=126680001, number='+31507654321', is_public=True)],
+            }),
+            ('on_up', {
+                'call_id': 'vgua0-dev-1444635717.1178',
+                'caller': CallerId(code=0, name='Foo bar', number='+31501xxxxxx', is_public=False),
+                'callee': CallerId(code=126680001, number='+31507654321', is_public=True),
+            }),
+            ('on_b_dial', {
+                'call_id': 'vgua0-dev-1444635718.1182',
+                'caller': CallerId(code=126680001, number='201', is_public=True),
+                'targets': [CallerId(code=126680002, number='202', is_public=True)],
+            }),
+            ('on_up', {
+                'call_id': 'vgua0-dev-1444635718.1182',
+                'caller': CallerId(code=126680001, number='201', is_public=True),
+                'callee': CallerId(code=126680002, number='202', is_public=True),
+            }),
+            ('on_attended_transfer', {
+                'redirector': CallerId(code=126680001, number='201', is_public=True),
+                'party1': CallerId(code=0, name='Foo bar', number='+31501xxxxxx', is_public=False),
+                'party2': CallerId(code=126680002, number='202', is_public=True),
+                'new_id': 'vgua0-dev-1444635718.1182',
+                'merged_id': 'vgua0-dev-1444635717.1178',
+            }),
+            ('on_hangup', {
+                'call_id': 'vgua0-dev-1444635717.1178',
+                'caller': CallerId(code=0, name='Foo bar', number='+31501xxxxxx', is_public=False),
+                'callee': CallerId(code=126680001, number='+31507654321', is_public=True),
+                'reason': 'transferred',
+            }),
+            ('on_hangup', {
+                'call_id': 'vgua0-dev-1444635718.1182',
+                'caller': CallerId(code=0, name='Foo bar', number='+31501xxxxxx', is_public=False),
                 'callee': CallerId(code=126680002, number='202', is_public=True),
                 'reason': 'completed',
             }),

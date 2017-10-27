@@ -60,6 +60,81 @@ class BaseReporter(object):
         """
         pass
 
+    def on_attended_transfer(self, call_id, merged_id, redirector, party1, party2):
+        """
+        Gets invoked when an attended transfer is completed.
+
+        In an attended transfer, one of the participants of a conversation
+        calls a third participant, waits for the third party to answer, talks
+        to the third party and then transfers their original conversation
+        partner to the third party.
+
+        Args:
+            call_id (str): The unique ID of the resulting call.
+            merged_id (str): The unique ID of the call which will end.
+            redirector (CallerId): The caller ID of the party performing the
+                transfer.
+            party1 (CallerId): The caller ID of the party which has been
+                transferred.
+            party2 (CallerId): The caller ID of the party which received the
+                transfer.
+        """
+        pass
+
+    def on_blind_transfer(self, call_id, merged_id, redirector, party1, targets):
+        """
+        Gets invoked when a blind or blonde transfer is completed.
+
+        In a blind transfer, one of the call participant transfers their
+        conversation partner to a third party. However, unlike with an
+        attended transfer, the redirector doesn't wait for the other end to
+        pick up, but just punches in the number and sends their conversation
+        party away. Because of this, multiple phones may actually be addressed
+        by this transfer, hence the multiple targets. The real participant can
+        be recovered later on when someone answers the transferred call.
+
+        A blonde is a middle road between blind transfers and attended
+        transfers. With a blond transfer, the redirector requests an attended
+        transfer but doesn't wait for the receiving end to pick up. Since the
+        data of blind and blonde transfers looks identical, they don't have
+        special hooks.
+
+        Args:
+            call_id (str): The unique ID of the resulting call.
+            merged_id (str): The unique ID of the call which will end.
+            redirector (CallerId): The caller ID of the party performing the
+                transfer.
+            party1 (CallerId): The caller ID of the party which has been
+                transferred.
+            targets (list): A list of CallerId objects whose phones are
+                ringing for this transfer.
+        """
+        pass
+
+    def on_forward(self, call_id, caller, loser, targets):
+        """
+        Gets invoked when a call is forwarded before being picked up.
+
+        There are two known situations when this may occur.
+
+        The first is call forwarding. Some phones support setting a call
+        forwarding destination, meaning calls which are not picked up on the
+        phone itself are forwarded to someone else.
+
+        The second is call pickup. Phones can be configured in Asterisk to be
+        in a call pickup group. If one of the phones is the group rings,
+        another phone in the group can type in a special sequence and hijack
+        the call so they can answer the call themselves.
+
+        Args:
+            call_id (str): The unique ID of the resulting call.
+            caller (CallerId): The caller being forwarded.
+            loser (CallerId): The party who was originally called.
+            targets (list): A list of CallerId's to whom the call is being
+                forwarded.
+        """
+        pass
+
     def on_b_dial(self, call_id, caller, targets):
         """
         Gets invoked when the B side of a call is initiated.

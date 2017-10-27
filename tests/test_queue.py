@@ -8,7 +8,7 @@ class TestQueue(ChannelEventsTestCase):
         """
         Test a successful call through a queue.
         """
-        events = self.run_and_get_events('examples/orig/queue_simple.json')
+        events = self.run_and_get_events('fixtures/queue/queue_simple.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -35,7 +35,7 @@ class TestQueue(ChannelEventsTestCase):
         """
         Test a call through a queue to a call group with multiple accounts.
         """
-        events = self.run_and_get_events('examples/orig/queue_group.json')
+        events = self.run_and_get_events('fixtures/queue/queue_group.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -65,7 +65,7 @@ class TestQueue(ChannelEventsTestCase):
         """
         Test a call where A exits the queue before B can pick up.
         """
-        events = self.run_and_get_events('examples/orig/queue_a_cancel_hangup.json')
+        events = self.run_and_get_events('fixtures/queue/queue_a_cancel_hangup.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -87,7 +87,7 @@ class TestQueue(ChannelEventsTestCase):
         """
         Test an attended transfer with someone coming through a queue.
         """
-        events = self.run_and_get_events('examples/orig/queue_attn_xfer.json')
+        events = self.run_and_get_events('fixtures/queue/queue_attn_xfer.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -110,7 +110,7 @@ class TestQueue(ChannelEventsTestCase):
                 'caller': CallerId(code=150010002, number='202', name="Samantha Graham", is_public=True),
                 'callee': CallerId(code=150010003, number='203', is_public=True),
             }),
-            ('on_transfer', {
+            ('on_attended_transfer', {
                 'new_id': 'e83df36bebbe-1507037917.120',
                 'merged_id': 'e83df36bebbe-1507037906.116',
                 'party1': CallerId(code=0, number='+31150010001', is_public=True),
@@ -137,7 +137,7 @@ class TestQueue(ChannelEventsTestCase):
         """
         Test a blind transfer with someone from a queue.
         """
-        events = self.run_and_get_events('examples/orig/queue_blind_xfer.json')
+        events = self.run_and_get_events('fixtures/queue/queue_blind_xfer.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -151,19 +151,19 @@ class TestQueue(ChannelEventsTestCase):
                 'callee': CallerId(code=150010002, number='+31150010004', is_public=True),
             }),
             ('on_b_dial', {
-                'call_id': 'e83df36bebbe-1507042428.134',
+                'call_id': 'e83df36bebbe-1507042415.129',
                 'caller': CallerId(code=150010002, number='+31150010004', is_public=True),
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
-            ('on_transfer', {
+            ('on_blind_transfer', {
                 'new_id': 'e83df36bebbe-1507042413.128',
-                'merged_id': 'e83df36bebbe-1507042428.134',
+                'merged_id': 'e83df36bebbe-1507042415.129',
                 'party1': CallerId(code=0, number='+31150010001', is_public=True),
-                'party2': CallerId(code=150010003, number='203', is_public=True),
+                'targets': [CallerId(code=150010003, number='203', is_public=True)],
                 'redirector': CallerId(code=150010002, number='+31150010004', name="", is_public=True),
             }),
             ('on_hangup', {
-                'call_id': 'e83df36bebbe-1507042428.134',
+                'call_id': 'e83df36bebbe-1507042415.129',
                 'caller': CallerId(code=150010002, number='+31150010004', is_public=True),
                 'callee': CallerId(code=150010003, number='203', is_public=True),
                 'reason': 'transferred',
