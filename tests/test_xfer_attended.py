@@ -52,14 +52,6 @@ class TestAttnXferOrig(ChannelEventsTestCase):
                 'merged_id': 'vgua0-dev-1442387090.552',
             }),
 
-            # The old call of 201 <-> 202 is hung up
-            ('on_hangup', {
-                'call_id': 'vgua0-dev-1442387090.552',
-                'caller': CallerId(code=126680001, number='201', is_public=True),
-                'callee': CallerId(code=126680002, number='202', is_public=True),
-                'reason': 'transferred',
-            }),
-
             # 202 and 203 are done
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1442387091.556',
@@ -118,14 +110,6 @@ class TestAttnXferOrig(ChannelEventsTestCase):
                 'merged_id': 'vgua0-dev-1442387041.544',
             }),
 
-            # The original call of +31501234567 <-> 201 is hung up
-            ('on_hangup', {
-                'call_id': 'vgua0-dev-1442387041.544',
-                'caller': CallerId(code=0, name='Foo bar', number='+31501234567', is_public=True),
-                'callee': CallerId(code=126680001, number='+31508009000', is_public=True),
-                'reason': 'transferred',
-            }),
-
             # +31501234567 and 202 are done
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1442387044.548',
@@ -170,12 +154,6 @@ class TestAttnXferOrig(ChannelEventsTestCase):
                 'party2': CallerId(code=126680002, number='202', is_public=True),
                 'new_id': 'vgua0-dev-1444635718.1182',
                 'merged_id': 'vgua0-dev-1444635717.1178',
-            }),
-            ('on_hangup', {
-                'call_id': 'vgua0-dev-1444635717.1178',
-                'caller': CallerId(code=0, name='Foo bar', number='+31501xxxxxx', is_public=False),
-                'callee': CallerId(code=126680001, number='+31507654321', is_public=True),
-                'reason': 'transferred',
             }),
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1444635718.1182',

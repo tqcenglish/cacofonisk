@@ -38,12 +38,6 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'new_id': '63f2f9ce924a-1502178076.20',
                 'merged_id': '63f2f9ce924a-1502178068.16',
             }),
-            ('on_hangup', {
-                'call_id': '63f2f9ce924a-1502178068.16',
-                'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'callee': CallerId(code=150010001, number='201', is_public=True),
-                'reason': 'transferred',
-            }),
             ('on_up', {
                 'call_id': '63f2f9ce924a-1502178076.20',
                 'caller': CallerId(code=150010001, number='201', is_public=True),
@@ -87,12 +81,6 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'targets': [CallerId(code=150010001, name='', number='201', is_public=True)],
                 'new_id': '63f2f9ce924a-1502179195.28',
                 'merged_id': '63f2f9ce924a-1502179190.24',
-            }),
-            ('on_hangup', {
-                'call_id': '63f2f9ce924a-1502179190.24',
-                'caller': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
-                'callee': CallerId(code=150010002, number='202', is_public=True),
-                'reason': 'transferred',
             }),
             ('on_up', {
                 'call_id': '63f2f9ce924a-1502179195.28',
@@ -147,14 +135,6 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'targets': [CallerId(code=126680002, number='202', is_public=True)],
                 'new_id': 'vgua0-dev-1443448784.120',
                 'merged_id': 'vgua0-dev-1443448768.113',
-            }),
-            # The caller ID of 205 was rewritten here, which is a bit nasty.
-            # This can be fixed when it becomes a problem, not before.
-            ('on_hangup', {
-                'call_id': 'vgua0-dev-1443448768.113',
-                'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(code=126680005, number='+31507001918', is_public=True),
-                'reason': 'transferred',
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1443448784.120',
@@ -249,12 +229,6 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'targets': [CallerId(code=126680005, number='205', is_public=True)],
                 'new_id': 'vgua0-dev-1443442620.82',
                 'merged_id': 'vgua0-dev-1443442620.85',
-            }),
-            ('on_hangup', {
-                'call_id': 'vgua0-dev-1443442620.85',
-                'caller': CallerId(code=126680002, number='+31507001918', is_public=True),
-                'callee': CallerId(code=126680005, number='205', is_public=True),
-                'reason': 'transferred',
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1443442620.82',

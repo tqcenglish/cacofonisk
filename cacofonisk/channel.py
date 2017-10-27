@@ -908,10 +908,6 @@ class ChannelManager(object):
                 # initiated on the B side, then it's our dummy channel.
                 self.on_blind_transfer(a_chan.uniqueid, redirector_chan.uniqueid, redirector, party1, targets)
 
-                # redirector_chan is was just merged, so it should be ended now.
-                for target in targets:
-                    self.on_hangup(redirector_chan.uniqueid, redirector, target, 'transferred')
-
             elif 'call_forwarding_transfer' in a_chan.custom:
                 # Hey, a_chan was in a previous call which was forwarded. If
                 # so, we don't want to send a regular dial notification, but
@@ -955,17 +951,13 @@ class ChannelManager(object):
                 # Channel has a back dial, meaning it was B who started the
                 # transfer. That means channel is bridged with A.
                 old_a_chan = channel.bridged_channel
-                old_b_chan = channel
             else:
                 # Channel doesn't have a back dialing, meaning it was A who
                 # started the transfer. That means channel is bridged with B.
                 old_a_chan = channel
-                old_b_chan = channel.bridged_channel
 
             self.on_attended_transfer(target.uniqueid, old_a_chan.uniqueid,
                                       target.callerid, transferred_channel.callerid, c_chan.callerid)
-
-            self.on_hangup(old_a_chan.uniqueid, old_a_chan.callerid, old_b_chan.callerid, 'transferred')
         else:
             # The redirector doesn't have an audio bridge with the new callee.
             # This means the redirector started the transfer before talking to
@@ -974,15 +966,13 @@ class ChannelManager(object):
             if channel.back_dial:
                 # The transferrer was the B side.
                 old_a_chan = channel.get_dialing_channel()
-                old_b_chan = channel
                 new_caller = old_a_chan
             elif channel.fwd_dials:
                 # The transferrer was the A side.
                 old_a_chan = channel
                 dialed_channels = channel.get_dialed_channels()
                 assert len(dialed_channels) == 1
-                old_b_chan = list(dialed_channels)[0]
-                new_caller = old_b_chan
+                new_caller = list(dialed_channels)[0]
             else:
                 # This channel doesn't have any dials. Probably garbage data.
                 return
@@ -990,7 +980,6 @@ class ChannelManager(object):
             targets = [c_chan.callerid for c_chan in target.get_dialed_channels()]
 
             self.on_blind_transfer(target.uniqueid, old_a_chan.uniqueid, target.callerid, new_caller.callerid, targets)
-            self.on_hangup(old_a_chan.uniqueid, old_a_chan.callerid, old_b_chan.callerid, 'transferred')
 
     def _raw_blind_transfer(self, channel, target):
         """
