@@ -286,3 +286,74 @@ class TestBlindXferOrig(ChannelEventsTestCase):
         ))
 
         self.assertEqual(expected_events, events)
+
+    def test_xfer_blind_group(self):
+        """
+        Test a blind transfer where the call is transferred to a group.
+        """
+        events = self.run_and_get_events('fixtures/xfer_blind/xfer_blind_group.json')
+
+        expected_events = self.events_from_tuples((
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509117819.36',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'targets': [CallerId(code=150010004, number='204', is_public=True)],
+            }),
+            ('on_up', {
+                'call_id': '0f00dcaa884f-1509117819.36',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'callee': CallerId(code=150010004, number='204', is_public=True),
+            }),
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509117819.37',
+                'caller': CallerId(code=150010004, number='204', is_public=True),
+                # It picks the account code of one of the real targets at random.
+                'targets': [
+                    CallerId(code=150010001, number='403', is_public=True),
+                    CallerId(code=150010003, number='403', is_public=True),
+                ],
+            }),
+            ('on_blind_transfer', {
+                'redirector': CallerId(code=150010004, number='204', is_public=True),
+                'party1': CallerId(code=150010002, number='202', is_public=True),
+                'targets': [
+                    CallerId(code=150010001, number='403', is_public=True),
+                    CallerId(code=150010003, number='403', is_public=True),
+                ],
+                'new_id': '0f00dcaa884f-1509117819.36',
+                'merged_id': '0f00dcaa884f-1509117819.37',
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509117819.37',
+                'caller': CallerId(code=150010004, number='204', is_public=True),
+                'callee': CallerId(code=150010001, number='403', is_public=True),
+                'reason': 'transferred',
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509117819.37',
+                'caller': CallerId(code=150010004, number='204', is_public=True),
+                'callee': CallerId(code=150010003, number='403', is_public=True),
+                'reason': 'transferred',
+            }),
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509117819.36',
+                'caller': CallerId(code=150010002, number='202', is_public=True),
+                'targets': [
+                    CallerId(code=150010001, number='403', is_public=True),
+                    CallerId(code=150010003, number='403', is_public=True),
+                ],
+            }),
+            ('on_up', {
+                'call_id': '0f00dcaa884f-1509117819.36',
+                'caller': CallerId(code=150010002, number='202', is_public=True),
+                'callee': CallerId(code=150010001, number='403', is_public=True),
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509117819.36',
+                'caller': CallerId(code=150010002, number='202', is_public=True),
+                'callee': CallerId(code=150010001, number='403', is_public=True),
+                'reason': 'completed',
+            }),
+        ))
+
+        self.assertEqual(expected_events, events)

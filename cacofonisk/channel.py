@@ -865,7 +865,6 @@ class ChannelManager(object):
             a_chan = channel.get_dialing_channel()
 
             if 'raw_blind_transfer' in a_chan.custom:
-                # TODO: Check this works when transferring to a group.
                 # This is an interesting exception: we got a Blind
                 # Transfer message earlier and recorded it in this
                 # attribute. We'll translate this b_dial to first a
@@ -874,7 +873,7 @@ class ChannelManager(object):
 
                 redirector = redirector_chan.callerid
                 party1 = a_chan.callerid
-                party2 = channel.callerid
+                targets = [party.callerid for party in a_chan.get_dialed_channels()]
 
                 # We're going to want to simulate a pre-flight dial event for
                 # consistency with attended transfers. In this dial, the
@@ -889,14 +888,14 @@ class ChannelManager(object):
                     # we're going to be left with B -> C afterwards. No dial
                     # event was triggered with B as caller, so we should do
                     # that now.
-                    self.on_b_dial(a_chan.uniqueid, redirector, [party2])
+                    self.on_b_dial(a_chan.uniqueid, redirector, targets)
                 else:
                     # This transfer was initiated on the B side, which means
                     # we're going to be left with A -> C afterwards. A dial
                     # event with A was already generated, so we could (ab)use
                     # any old channel here to simulate a merged call.
                     # So why specifically use redirector_chan? Just read on...
-                    self.on_b_dial(redirector_chan.uniqueid, redirector, [party2])
+                    self.on_b_dial(redirector_chan.uniqueid, redirector, targets)
 
                 # Now it's time to send a transfer event. dialing_channel is
                 # always the channel we're going to be left with (regardless
@@ -907,10 +906,11 @@ class ChannelManager(object):
                 # if the call was initiated on the A side, redirector_chan is
                 # the original call which we will end. If the transfer was
                 # initiated on the B side, then it's our dummy channel.
-                self.on_blind_transfer(a_chan.uniqueid, redirector_chan.uniqueid, redirector, party1, [party2])
+                self.on_blind_transfer(a_chan.uniqueid, redirector_chan.uniqueid, redirector, party1, targets)
 
                 # redirector_chan is was just merged, so it should be ended now.
-                self.on_hangup(redirector_chan.uniqueid, redirector, party2, 'transferred')
+                for target in targets:
+                    self.on_hangup(redirector_chan.uniqueid, redirector, target, 'transferred')
 
             elif 'call_forwarding_transfer' in a_chan.custom:
                 # Hey, a_chan was in a previous call which was forwarded. If
@@ -926,6 +926,7 @@ class ChannelManager(object):
                 # let's figure out to whom a_chan has open dials. To ensure
                 # only one event is raised, we'll check all the uniqueids and
                 # only send an event for the channel with the lowest uniqueid.
+                # if not a_chan.is_up:
                 open_dials = a_chan.get_dialed_channels()
 
                 if open_dials and min([dial.uniqueid for dial in open_dials]) == channel.uniqueid:
