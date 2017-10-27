@@ -10,7 +10,8 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
     doesn't wait for person C to pick up.
     """
     def test_xfer_blonde_abacbc(self):
-        """Test blonde transfer where A initiates the transfer.
+        """
+        Test blonde transfer where A initiates the transfer.
         """
         events = self.run_and_get_events('examples/orig/xfer_blonde_abacbc.json')
 
@@ -18,7 +19,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1502178068.16',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'callee': CallerId(code=150010001, number='201', is_public=True),
+                'targets': [CallerId(code=150010001, number='201', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '63f2f9ce924a-1502178068.16',
@@ -28,12 +29,12 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1502178076.20',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'callee': CallerId(code=150010003, number='203', is_public=True),
+                'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
             ('on_transfer', {
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'party1': CallerId(code=150010001, number='201', is_public=True),
-                'party2': CallerId(code=150010003, number='203', is_public=True),
+                'party2': [CallerId(code=150010003, number='203', is_public=True)],
                 'new_id': '63f2f9ce924a-1502178076.20',
                 'merged_id': '63f2f9ce924a-1502178068.16',
             }),
@@ -59,7 +60,8 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
         self.assertEqual(expected_events, events)
 
     def test_xfer_blonde_abbcac(self):
-        """Test blonde transfer where B initiates the transfer.
+        """
+        Test blonde transfer where B initiates the transfer.
         """
         events = self.run_and_get_events('examples/orig/xfer_blonde_abbcac.json')
 
@@ -67,7 +69,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1502179190.24',
                 'caller': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
-                'callee': CallerId(code=150010002, number='202', is_public=True),
+                'targets': [CallerId(code=150010002, number='202', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '63f2f9ce924a-1502179190.24',
@@ -77,19 +79,19 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1502179195.28',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'callee': CallerId(code=150010001, name='', number='201', is_public=True),
+                'targets': [CallerId(code=150010001, name='', number='201', is_public=True)],
             }),
             ('on_transfer', {
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'party1': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
-                'party2': CallerId(code=150010001, name='', number='201', is_public=True),
+                'party2': [CallerId(code=150010001, name='', number='201', is_public=True)],
                 'new_id': '63f2f9ce924a-1502179195.28',
                 'merged_id': '63f2f9ce924a-1502179190.24',
             }),
             ('on_hangup', {
                 'call_id': '63f2f9ce924a-1502179190.24',
                 'caller': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
-                'callee': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
+                'callee': CallerId(code=150010002, number='202', is_public=True),
                 'reason': 'transferred',
             }),
             ('on_up', {
@@ -119,18 +121,10 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443448768.113',
                 'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(code=126680002, number='+31507001918', is_public=True),
-            }),
-            ('on_b_dial', {
-                'call_id': 'vgua0-dev-1443448768.113',
-                'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(code=126680005, number='+31507001918', is_public=True),
-            }),
-            ('on_hangup', {
-                'call_id': 'vgua0-dev-1443448768.113',
-                'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(code=126680002, number='+31507001918', is_public=True),
-                'reason': 'answered-elsewhere',
+                'targets': [
+                    CallerId(code=126680002, number='+31507001918', is_public=True),
+                    CallerId(code=126680005, number='+31507001918', is_public=True),
+                ],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1443448768.113',
@@ -145,12 +139,12 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443448784.120',
                 'caller': CallerId(code=126680005, name='No NAT', number='205', is_public=True),
-                'callee': CallerId(code=126680002, number='202', is_public=True),
+                'targets': [CallerId(code=126680002, number='202', is_public=True)],
             }),
             ('on_transfer', {
                 'redirector': CallerId(code=126680005, name='No NAT', number='205', is_public=True),
                 'party1': CallerId(number='+31507xxxxxx', is_public=False),
-                'party2': CallerId(code=126680002, number='202', is_public=True),
+                'party2': [CallerId(code=126680002, number='202', is_public=True)],
                 'new_id': 'vgua0-dev-1443448784.120',
                 'merged_id': 'vgua0-dev-1443448768.113',
             }),
@@ -159,7 +153,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1443448768.113',
                 'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(code=126680005, name='No NAT', number='205', is_public=True),
+                'callee': CallerId(code=126680005, number='+31507001918', is_public=True),
                 'reason': 'transferred',
             }),
             ('on_up', {
@@ -202,36 +196,14 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             # +31507xxxxxx calls 201/202/+31612345678
             # => 126680001 (doesn't answer)
-            ('on_b_dial', {
-                'call_id': 'vgua0-dev-1443442620.82',
-                'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(code=126680001, number='+31507001918', is_public=True),
-            }),
-            ('on_hangup', {
-                'call_id': 'vgua0-dev-1443442620.82',
-                'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(code=126680001, number='+31507001918', is_public=True),
-                'reason': 'no-answer',
-            }),
-
-            # => 202 (gets picked up)
-            ('on_b_dial', {
-                'call_id': 'vgua0-dev-1443442620.82',
-                'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(code=126680002, number='+31507001918', is_public=True),
-            }),
-
             # => +31612345678 (gets busy)
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443442620.82',
                 'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(number='+31612345678', is_public=True),
-            }),
-            ('on_hangup', {
-                'call_id': 'vgua0-dev-1443442620.82',
-                'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(number='+31612345678', is_public=True),
-                'reason': 'busy',
+                'targets': [
+                    CallerId(number='+31612345678', is_public=True),
+                    CallerId(code=126680002, number='+31507001918', is_public=True)
+                ],
             }),
 
             # => 202 picks up
@@ -247,7 +219,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443442640.94',
                 'caller': CallerId(code=126680002, name='John 202 Doe', number='202', is_public=True),
-                'callee': CallerId(code=126680005, number='205', is_public=True),
+                'targets': [CallerId(code=126680005, number='205', is_public=True)],
             }),
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1443442640.94',
@@ -264,9 +236,9 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             # a proper on_b_dial event. The CLI number looks odd, but
             # it's okay, because it's what 126680002 was reached by.
             ('on_b_dial', {
-                'call_id': 'vgua0-dev-1443442648.100',
+                'call_id': 'vgua0-dev-1443442620.85',
                 'caller': CallerId(code=126680002, number='+31507001918', is_public=True),
-                'callee': CallerId(code=126680005, number='205', is_public=True),
+                'targets': [CallerId(code=126680005, number='205', is_public=True)],
             }),
             # Again, the CLI-num for 126680002 is okay.
             # Ideally, I'd like to see +31507xxxxxx in CLI-num, but I
@@ -276,10 +248,10 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'party1': CallerId(number='P', is_public=False),  # +31507xxxxxx ?
                 'party2': CallerId(code=126680005, number='205', is_public=True),
                 'new_id': 'vgua0-dev-1443442620.82',
-                'merged_id': 'vgua0-dev-1443442648.100',
+                'merged_id': 'vgua0-dev-1443442620.85',
             }),
             ('on_hangup', {
-                'call_id': 'vgua0-dev-1443442648.100',
+                'call_id': 'vgua0-dev-1443442620.85',
                 'caller': CallerId(code=126680002, number='+31507001918', is_public=True),
                 'callee': CallerId(code=126680005, number='205', is_public=True),
                 'reason': 'transferred',

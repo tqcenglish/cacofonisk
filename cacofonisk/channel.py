@@ -101,8 +101,6 @@ class Channel(object):
         self._accountcode = event['AccountCode']
         self._exten = event['Exten']
 
-        self._hangups = set()
-
         # If this is a SIP/<accountcode>- channel, then this is an
         # outbound channel where the CLI is wrong. We could set the
         # accountcode, but we overwrite it in get_callerid later on
@@ -132,7 +130,7 @@ class Channel(object):
             'backward_local_bridge={prev} '
             'state={self._state} '
             'accountcode={self._accountcode} '
-            'cli={self._callerid} '
+            'cli={self.callerid} '
             'exten={self._exten!r})>').format(
             self=self,
             next=(self._fwd_local_bridge and self._fwd_local_bridge.name),
@@ -223,10 +221,6 @@ class Channel(object):
     @property
     def state(self):
         return self._state
-
-    @property
-    def hangups(self):
-        return list(self._hangups)
 
     def set_name(self, name):
         """
@@ -514,9 +508,6 @@ class Channel(object):
                 b_channels.add(b_chan)
 
         return b_channels
-
-    def add_hangup(self, channel, reason):
-        self._hangups.add((channel.callerid, reason))
 
 
 class ChannelRegistry(object):
@@ -870,97 +861,143 @@ class ChannelManager(object):
             channel (Channel): The channel of the B side.
         """
         if channel.is_sip:
-            a_chan = channel.get_dialing_channel()
-            b_chan = channel
-            caller = a_chan.callerid
-            callee = b_chan.callerid
+            dialing_channel = channel.get_dialing_channel()
 
-            if 'raw_blind_transfer' in a_chan.custom:
+            if 'raw_blind_transfer' in dialing_channel.custom:
+                # TODO: Check this works when transferring to a group.
                 # This is an interesting exception: we got a Blind
                 # Transfer message earlier and recorded it in this
                 # attribute. We'll translate this b_dial to first a
                 # on_b_dial and then the on_transfer event.
-                redirector_chan, side = a_chan.custom.pop('raw_blind_transfer')
+                redirector_chan, side = dialing_channel.custom.pop('raw_blind_transfer')
 
+                dialing_channel = channel.get_dialing_channel()
+                redirector = redirector_chan.callerid
+                party1 = dialing_channel.callerid
+                party2 = channel.callerid
+
+                # We're going to want to simulate a pre-flight dial event for
+                # consistency with attended transfers. In this dial, the
+                # redirector supposedly calls the person to who the call is
+                # going to be redirected to.
+                #
+                # It's important that a b_dial has been sent for the call
+                # we're going to be left with afterwards, but also that the
+                # call ID is different from the call before the transfer.
                 if side == 'A':
-                    # This transfer was initiated on the A side.
-                    old_a_chan = a_chan
-                    old_b_chan = redirector_chan
+                    # This transfer was initiated on the A side, which means
+                    # we're going to be left with B -> C afterwards. No dial
+                    # event was triggered with B as caller, so we should do
+                    # that now.
+                    self.on_b_dial(dialing_channel.uniqueid, redirector, [party2])
                 else:
-                    # This transfer was initiated on the B side.
-                    old_a_chan = redirector_chan
-                    old_b_chan = a_chan
+                    # This transfer was initiated on the B side, which means
+                    # we're going to be left with A -> C afterwards. A dial
+                    # event with A was already generated, so we could (ab)use
+                    # any old channel here to simulate a merged call.
+                    # So why specifically use redirector_chan? Just read on...
+                    self.on_b_dial(redirector_chan.uniqueid, redirector, [party2])
 
-                # For the sake of being consistent with attentended transfers,
-                # first "initiate" the call on the A/B -> C leg.
-                self.on_b_dial(b_chan.uniqueid, redirector_chan.callerid, callee)
+                # Now it's time to send a transfer event. dialing_channel is
+                # always the channel we're going to be left with (regardless
+                # of whether it was originally A or B), so that's our new
+                # call_id.
+                #
+                # See, redirector_chan is always the call we'll want to merge.
+                # if the call was initiated on the A side, redirector_chan is
+                # the original call which we will end. If the transfer was
+                # initiated on the B side, then it's our dummy channel.
+                self.on_transfer(dialing_channel.uniqueid, redirector_chan.uniqueid, redirector, party1, party2)
 
-                # Send the transfer event.
-                self.on_transfer(a_chan.uniqueid, old_a_chan.uniqueid, redirector_chan.callerid, caller, callee)
+                # redirector_chan is was just merged, so it should be ended now.
+                self.on_hangup(redirector_chan.uniqueid, redirector, party2, 'transferred')
 
-                old_a_chan.add_hangup(old_b_chan, 'transferred')
-
-                self.on_hangup(old_a_chan.uniqueid, old_a_chan.callerid, old_a_chan.hangups)
-                old_a_chan.hangups = []
-            elif 'call_forwarding_transfer' in a_chan.custom:
+            elif 'call_forwarding_transfer' in dialing_channel.custom:
                 # Hey, a_chan was in a previous call which was forwarded. If
                 # so, we don't want to send a regular dial notification, but
                 # we want to pretend the call is being "transferred" to the
-                # phone to which the calls are forwarded.
-                old_b_chan = a_chan.custom.pop('call_forwarding_transfer')
+                # phone to which the calls are forwarded, and this transfer
+                # was performed by the b_chan.
+                old_b_chan = dialing_channel.custom.pop('call_forwarding_transfer')
                 redirector = old_b_chan.callerid
+                callee = channel.callerid
 
-                self.on_b_dial(old_b_chan.uniqueid, redirector, callee)
-                self.on_transfer(a_chan.uniqueid, old_b_chan.uniqueid, redirector, caller, callee)
+                # Pretend B is calling C.
+                self.on_b_dial(old_b_chan.uniqueid, redirector, [callee])
+
+                # Merge the B -> C dummy call into A -> B, creating A -> C.
+                self.on_transfer(dialing_channel.uniqueid, old_b_chan.uniqueid,
+                                 redirector, dialing_channel.callerid, callee)
+
+                # End the dummy call.
                 self.on_hangup(old_b_chan.uniqueid, redirector, callee, 'transferred')
             else:
+                # We'll want to send one ringing event for all targets. So
+                # let's figure out to whom a_chan has open dials. To ensure
+                # only one event is raised, we'll check all the uniqueids and
+                # only send an event for the channel with the lowest uniqueid.
+                a_chan = channel.get_dialing_channel()
                 open_dials = a_chan.get_dialed_channels()
 
-                if open_dials and min([dial.uniqueid for dial in open_dials]) == b_chan.uniqueid:
-                    callees = [dial.callerid for dial in open_dials]
-                    self.on_b_dial(a_chan.uniqueid, a_chan.callerid, callees)
+                if open_dials and min([dial.uniqueid for dial in open_dials]) == channel.uniqueid:
+                    targets = [dial.callerid for dial in open_dials]
+                    self.on_b_dial(a_chan.uniqueid, a_chan.callerid, targets)
 
     def _raw_attended_transfer(self, channel, target):
         """
         Handle the attended transfer event.
 
         Args:
-            channel (Channel): The original channel.
-            target (Channel): The target channel.
+            channel (Channel): The original channel is the channel which the
+                redirector used to talk with the person who's being
+                transferred.
+            target (Channel): The target channel is the channel which the
+                redirector used to set up the call to the person to whom the
+                call is being transferred.
         """
-        transferred_channel = channel.bridged_channel
-
-        old_a_chan = channel.get_dialing_channel()
-
-        if old_a_chan == channel:
-            # Channel is our original A channel, which means the transfer
-            # was initiated on the A side.
-            old_b_chan = channel.bridged_channel
-        else:
-            old_b_chan = channel
-
         if target.is_bridged:
-            # The channel is bridged, things are easy.
-            # (Attended transfer.)
-            new_party = target.bridged_channel
-            original_a_channel = channel.get_dialing_channel()
+            # The redirector already has an audio bridge open with the new
+            # callee. This means that we're handling an attended transfer.
+            transferred_channel = channel.bridged_channel
+            c_chan = target.bridged_channel
 
-            self.on_transfer(target.uniqueid, original_a_channel.uniqueid,
-                             target.callerid, transferred_channel.callerid, new_party.callerid)
+            if channel.back_dial:
+                # Channel has a back dial, meaning it was B who started the
+                # transfer. That means channel is bridged with A.
+                old_a_chan = channel.bridged_channel
+                old_b_chan = channel
+            else:
+                # Channel doesn't have a back dialing, meaning it was A who
+                # started the transfer. That means channel is bridged with B.
+                old_a_chan = channel
+                old_b_chan = channel.bridged_channel
+
+            self.on_transfer(target.uniqueid, old_a_chan.uniqueid,
+                             target.callerid, transferred_channel.callerid, [c_chan.callerid])
+
+            self.on_hangup(old_a_chan.uniqueid, old_a_chan.callerid, old_b_chan.callerid, 'transferred')
         else:
-            # The second channel is not bridged. Check the open dials.
-            # (Blonde transfer.)
-            for b_chan in target.get_dialed_channels():
-                self.on_transfer(target.uniqueid, old_a_chan.uniqueid,
-                                 target.callerid, old_a_chan.callerid, b_chan.callerid)
+            # The redirector doesn't have an audio bridge with the new callee.
+            # This means the redirector started the transfer before talking to
+            # the redirection target.
 
-        old_a_chan.add_hangup(old_b_chan, 'transferred')
+            if channel.back_dial:
+                # The transferrer was the B side.
+                old_a_chan = channel.get_dialing_channel()
+                old_b_chan = channel
+                new_caller = old_a_chan
+            else:
+                # The transferrer was the A side.
+                old_a_chan = channel
+                dialed_channels = channel.get_dialed_channels()
+                assert len(dialed_channels) == 1
+                old_b_chan = list(dialed_channels)[0]
+                new_caller = old_b_chan
 
-        self.on_hangup(old_a_chan.uniqueid, old_a_chan.callerid, old_a_chan.hangups)
+            targets = [c_chan.callerid for c_chan in target.get_dialed_channels()]
 
-        # Because the old A channel may be used in a new conversation,
-        # we should clean out the old hangups beforehand.
-        old_a_chan.hangups = []
+            self.on_transfer(target.uniqueid, old_a_chan.uniqueid, target.callerid, new_caller.callerid, targets)
+            self.on_hangup(old_a_chan.uniqueid, old_a_chan.callerid, old_b_chan.callerid, 'transferred')
 
     def _raw_blind_transfer(self, channel, target):
         """
@@ -974,9 +1011,7 @@ class ChannelManager(object):
             channel (Channel): The channel to be transferred.
             target (Channel): The target channel.
         """
-        dialing_channel = channel.get_dialing_channel()
-
-        if dialing_channel != channel:
+        if channel.back_dial:
             target.custom['raw_blind_transfer'] = (channel, 'B')
         else:
             target.custom['raw_blind_transfer'] = (channel, 'A')
@@ -1000,7 +1035,7 @@ class ChannelManager(object):
         callee = winner.callerid.replace(name=dest.name, number=dest.number, is_public=dest.is_public)
 
         # Call on_transfer and pretend the loser performed the transfer.
-        self.on_b_dial(loser.uniqueid, dest, callee)
+        self.on_b_dial(loser.uniqueid, dest, [callee])
         self.on_transfer(a_chan.uniqueid, loser.uniqueid, dest, caller, callee)
         self.on_hangup(loser.uniqueid, dest, callee, 'transferred')
 
@@ -1032,7 +1067,7 @@ class ChannelManager(object):
                 self._raw_up(a_chan, b_chan)
 
     def _raw_up(self, a_chan, b_chan):
-        self.on_up(a_chan.uniqueid, a_chan.callerid, b_chan.callerid, a_chan.hangups)
+        self.on_up(a_chan.uniqueid, a_chan.callerid, b_chan.callerid)
 
     def _raw_hangup(self, channel, event):
         """
@@ -1041,30 +1076,6 @@ class ChannelManager(object):
         Args:
             channel (Channel): The channel which is hung up.
             event (Event): The data of the event.
-        """
-        if not channel.is_zombie:
-            self._send_hangup_notifications_for_event(channel, event)
-
-        # We've sent all relevant notifications regarding the channel
-        # being gone, so we can forget it ourselves now as well.
-
-        # Disconnect all channels linked to this channel.
-        channel.do_hangup(event)
-
-        # Remove the channel from our own list.
-        self._registry.remove(channel)
-
-        # If we don't have any channels, check whether we're completely clean.
-        if not len(self._registry):
-            self._reporter.trace_msg('(no channels left)')
-
-    def _send_hangup_notifications_for_event(self, channel, event):
-        """
-        Check whether any hooks should be called for this hangup.
-
-        Args:
-            channel (Channel): The channel which is being hanged up.
-            event (Event): A dict-like object with event data.
         """
         if channel.is_relevant:
             # This is a SIP/ channel being disconnected. Let's figure
@@ -1080,13 +1091,14 @@ class ChannelManager(object):
                 # This SIP/ channel does not have any dials, which means
                 # it's probably one of the last ones to be removed.
                 # The notifications should have been sent already.
-                return
+                pass
 
-        elif channel.get_dialed_channels():
+        elif not channel.is_zombie and channel.get_dialed_channels():
             # This is not a SIP/ channel, but it does have dials to callees.
             # Let's pull in the real a_chan and b_chan and check later if
             # they are real channels.
             a_chan = channel.get_dialing_channel()
+
             for b_chan in channel.get_dialed_channels():
                 self._send_hangup_notifications_for_channels(a_chan, b_chan, event)
         else:
@@ -1094,7 +1106,20 @@ class ChannelManager(object):
             # callees. That probably means the channel chain is already
             # collapsing and we should have sent our notifications already.
             # We don't want to send more notifications now.
-            return
+            pass
+
+        # We've sent all relevant notifications regarding the channel
+        # being gone, so we can forget it ourselves now as well.
+
+        # Disconnect all channels linked to this channel.
+        channel.do_hangup(event)
+
+        # Remove the channel from our own list.
+        self._registry.remove(channel)
+
+        # If we don't have any channels, check whether we're completely clean.
+        if not len(self._registry):
+            self._reporter.trace_msg('(no channels left)')
 
     def _send_hangup_notifications_for_channels(self, a_chan, b_chan, event):
         """
@@ -1114,30 +1139,22 @@ class ChannelManager(object):
             # Only send events when our caller and destination channels are
             # the real caller and destination.
 
+            if len(a_chan.get_dialed_channels()) > 1:
+                # If a_chan has more than one dialed channel left, it's
+                # probably calling a group, meaning the call isn't really
+                # ending. Only if this is the last b_chan to hang up, send
+                # an event.
+                return
+
             hangup_cause = int(event['Cause'])
 
-            if b_chan.state < AST_STATE_RING:
-                # This is a call where the b_chan has not yet come up. This
-                # could happen if the callee is unavailable (e.g. the phone is
-                # unplugged). For the sake of consistency, let's send a dial
-                # so it looks like the phone rang before.
-                self.on_b_dial(a_chan.uniqueid, a_chan.callerid, b_chan.callerid)
-
-                if hangup_cause == AST_CAUSE_NORMAL_CLEARING:
-                    # This is a special exception. Our b_chan never rang but
-                    # the call was "normal"? That probably means that the call
-                    # was forwarded from the phone itself. If that happens, we
-                    # don't want to hang up the call yet, but send a dummy
-                    # transfer when the other end comes up.
-                    a_chan.custom['call_forwarding_transfer'] = b_chan
-                    return
-
-            if b_chan.state < AST_STATE_RING:
-                # This is a call where the b_chan has not yet come up. This
-                # could happen if the callee is unavailable (e.g. the phone is
-                # unplugged). For the sake of consistency, let's send a dial so
-                # it looks like the phone rang before.
-                self.on_b_dial(a_chan.uniqueid, a_chan.callerid, b_chan.callerid)
+            if b_chan.state < AST_STATE_RING and hangup_cause == AST_CAUSE_NORMAL_CLEARING:
+                # This is a special exception. Our b_chan never rang but
+                # the call was "normal"? That probably means that the call
+                # was forwarded from the phone itself. If that happens, we
+                # don't want to hang up the call yet, but send a dummy
+                # transfer when the other end comes up.
+                a_chan.custom['call_forwarding_transfer'] = b_chan
 
             # Map the Asterisk hangup causes to easy to understand strings.
             # See https://wiki.asterisk.org/wiki/display/AST/Hangup+Cause+Mappings
@@ -1163,16 +1180,13 @@ class ChannelManager(object):
             else:
                 reason = 'failed'
 
-            a_chan.add_hangup(b_chan, reason)
-
-            if len(a_chan.get_dialed_channels()) <= 1:
-                self.on_hangup(a_chan.uniqueid, a_chan.callerid, a_chan.hangups)
+            self.on_hangup(a_chan.uniqueid, a_chan.callerid, b_chan.callerid, reason)
 
     # ===================================================================
     # Actual event handlers you should override
     # ===================================================================
 
-    def on_b_dial(self, call_id, caller, callees):
+    def on_b_dial(self, call_id, caller, targets):
         """
         Gets invoked when the B side of a call is initiated.
 
@@ -1183,13 +1197,13 @@ class ChannelManager(object):
         Args:
             call_id (str): Unique call ID string.
             caller (CallerId): The initiator of the call.
-            callee (CallerId): The recipient of the call.
+            targets (list): A list of recipients of the call.
         """
-        self._reporter.trace_msg('{} b_dial: {} --> {}'.format(call_id, caller, callees))
+        # FIXME docs is wrong.
+        self._reporter.trace_msg('{} ringing: {} --> {}'.format(call_id, caller, targets))
+        self._reporter.on_b_dial(call_id, caller, targets)
 
-        self._reporter.on_b_dial(call_id, caller, callees)
-
-    def on_transfer(self, call_id, merged_id, redirector, party1, party2):
+    def on_transfer(self, call_id, merged_id, redirector, party1, targets):
         """
         Gets invoked when a call is transferred.
 
@@ -1212,13 +1226,13 @@ class ChannelManager(object):
             redirector (CallerId): The initiator of the transfer.
             party1 (CallerId): One of the two parties that are tied
                 together.
-            party2 (CallerId): The other one.
+            targets (list): The other one.
         """
         self._reporter.trace_msg(
-            '{} <== {} transfer: {} <--> {} (through {})'.format(call_id, merged_id, party1, party2, redirector)
+            '{} <== {} transfer: {} <--> {} (through {})'.format(call_id, merged_id, party1, targets, redirector)
         )
 
-        self._reporter.on_transfer(call_id, merged_id, redirector, party1, party2)
+        self._reporter.on_transfer(call_id, merged_id, redirector, party1, targets)
 
     def on_user_event(self, event):
         """Handle custom UserEvent messages from Asterisk.
@@ -1233,7 +1247,7 @@ class ChannelManager(object):
         self._reporter.trace_msg('user_event: {}'.format(event))
         self._reporter.on_user_event(event)
 
-    def on_up(self, call_id, caller, callee, hangups):
+    def on_up(self, call_id, caller, callee):
         """Gets invoked when a call is connected.
 
         When two sides have connected and engaged in a conversation, an "up"
@@ -1246,11 +1260,10 @@ class ChannelManager(object):
             caller (CallerId): The initiator of the call.
             callee (CallerId): The recipient of the call.
         """
-        self._reporter.trace_msg('{} up: {} --> {} --- {}'.format(call_id, caller, callee, hangups))
+        self._reporter.trace_msg('{} up: {} --> {}'.format(call_id, caller, callee))
+        self._reporter.on_up(call_id, caller, callee)
 
-        self._reporter.on_up(call_id, caller, callee, hangups)
-
-    def on_hangup(self, call_id, caller, hangups):
+    def on_hangup(self, call_id, caller, callee, reason):
         """Gets invoked when a call is completed.
 
         There are two types of events which should be monitored to determine
@@ -1266,10 +1279,8 @@ class ChannelManager(object):
             reason (str): Why the call ended (completed, no-answer, busy,
                 failed, answered-elsewhere).
         """
-        self._reporter.trace_msg(
-            '{} hangup: {} --> {}'.format(call_id, caller, hangups)
-        )
-        self._reporter.on_hangup(call_id, caller, hangups)
+        self._reporter.trace_msg('{} hangup: {} --> {} (reason: {})'.format(call_id, caller, callee, reason))
+        self._reporter.on_hangup(call_id, caller, callee, reason)
 
 
 class DebugChannelManager(ChannelManager):

@@ -60,7 +60,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_b_dial(self, call_id, caller, callees):
+    def on_b_dial(self, call_id, caller, targets):
         """
         Gets invoked when the B side of a call is initiated.
 
@@ -71,8 +71,9 @@ class BaseReporter(object):
         Args:
             call_id (str): A unique identifier of the call.
             caller (CallerId): The initiator of the call.
-            callees (list): The recipient of the call.
+            targets (list): The recipient of the call.
         """
+        # FIXME docs is wrong.
         pass
 
     def on_user_event(self, event):
@@ -87,7 +88,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_up(self, call_id, caller, callee, hangups):
+    def on_up(self, call_id, caller, callee):
         """Track when a call has been set up between two parties.
 
         In simple calls, a "up" event is raised when a call has been ringing
@@ -101,7 +102,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_hangup(self, call_id, caller, hangups):
+    def on_hangup(self, call_id, caller, callee, reason):
         """Track when a call between two parties has ended.
 
         Args:

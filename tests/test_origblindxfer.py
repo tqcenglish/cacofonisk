@@ -14,7 +14,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1501834121.34',
                 'caller': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
-                'callee': CallerId(code=150010002, number='202', is_public=True),
+                'targets': [CallerId(code=150010002, number='202', is_public=True)],
             }),
             # 202 picks up
             ('on_up', {
@@ -24,9 +24,9 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             }),
             # 202 dials 201...
             ('on_b_dial', {
-                'call_id': '63f2f9ce924a-1501834125.40',
+                'call_id': '63f2f9ce924a-1501834121.35',
                 'caller': CallerId(code=150010002, number='202', is_public=True),
-                'callee': CallerId(code=150010001, number='201', is_public=True),
+                'targets': [CallerId(code=150010001, number='201', is_public=True)],
             }),
             # ... and immediately transfers 203 to 201
             ('on_transfer', {
@@ -34,11 +34,11 @@ class TestBlindXferOrig(ChannelEventsTestCase):
                 'party1': CallerId(code=150010003, number='203', is_public=True),
                 'party2': CallerId(code=150010001, number='201', is_public=True),
                 'new_id': '63f2f9ce924a-1501834121.34',
-                'merged_id': '63f2f9ce924a-1501834125.40'
+                'merged_id': '63f2f9ce924a-1501834121.35'
             }),
             # The initial call is disconnected
             ('on_hangup', {
-                'call_id': '63f2f9ce924a-1501834125.40',
+                'call_id': '63f2f9ce924a-1501834121.35',
                 'caller': CallerId(code=150010002, number='202', is_public=True),
                 'callee': CallerId(code=150010001, number='201', is_public=True),
                 'reason': 'transferred',
@@ -70,7 +70,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1501834972.41',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'callee': CallerId(code=150010003, number='203', is_public=True),
+                'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
             # 203 picks up
             ('on_up', {
@@ -84,7 +84,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1501834980.45',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'callee': CallerId(code=150010001, name='Robert Murray', number='201', is_public=True),
+                'targets': [CallerId(code=150010001, name='Robert Murray', number='201', is_public=True)],
             }),
             # ... and immediately transfers 203 to 201
             ('on_transfer', {
@@ -98,7 +98,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             ('on_hangup', {
                 'call_id': '63f2f9ce924a-1501834972.41',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'callee': CallerId(code=150010003, number='203', is_public=True),
+                'callee': CallerId(code=150010001, name='Robert Murray', number='201', is_public=True),
                 'reason': 'transferred',
             }),
             # 201 picks up to talk to 203
@@ -131,22 +131,10 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443449049.124',
                 'caller': CallerId(number='+31501234567', is_public=True),
-                'callee': CallerId(code=126680002, number='+31507001918', is_public=True),
-            }),
-
-            # => 205
-            ('on_b_dial', {
-                'call_id': 'vgua0-dev-1443449049.124',
-                'caller': CallerId(number='+31501234567', is_public=True),
-                'callee': CallerId(code=126680005, number='+31507001918', is_public=True),
-            }),
-
-            # => 205 doesn't pick up
-            ('on_hangup', {
-                'call_id': 'vgua0-dev-1443449049.124',
-                'caller': CallerId(number='+31501234567', is_public=True),
-                'callee': CallerId(code=126680005, number='+31507001918', is_public=True),
-                'reason': 'answered-elsewhere',
+                'targets': [
+                    CallerId(code=126680002, number='+31507001918', is_public=True),
+                    CallerId(code=126680005, number='+31507001918', is_public=True),
+                ],
             }),
 
             # => 202 picks up
@@ -159,9 +147,9 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             # (CLI for 126680002 is how it was reached externally,
             # that's okay.)
             ('on_b_dial', {
-                'call_id': 'vgua0-dev-1443449060.133',
+                'call_id': 'vgua0-dev-1443449049.125',
                 'caller': CallerId(code=126680002, number='+31507001918', is_public=True),
-                'callee': CallerId(code=126680005, number='205', is_public=True),
+                'targets': [CallerId(code=126680005, number='205', is_public=True)],
             }),
 
             # Blind xfer.
@@ -172,12 +160,12 @@ class TestBlindXferOrig(ChannelEventsTestCase):
                 'party1': CallerId(number='+31501234567', is_public=True),
                 'party2': CallerId(code=126680005, number='205', is_public=True),
                 'new_id': 'vgua0-dev-1443449049.124',
-                'merged_id': 'vgua0-dev-1443449060.133',
+                'merged_id': 'vgua0-dev-1443449049.125',
             }),
 
             # The call 202 <-> 205 is disconnected
             ('on_hangup', {
-                'call_id': 'vgua0-dev-1443449060.133',
+                'call_id': 'vgua0-dev-1443449049.125',
                 'caller': CallerId(code=126680002, number='+31507001918', is_public=True),
                 'callee': CallerId(code=126680005, number='205', is_public=True),
                 'reason': 'transferred',

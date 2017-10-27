@@ -23,7 +23,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1442387090.552',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
-                'callee': CallerId(code=126680002, number='202', is_public=True),
+                'targets': [CallerId(code=126680002, number='202', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1442387090.552',
@@ -35,7 +35,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1442387091.556',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
-                'callee': CallerId(code=126680003, number='203', is_public=True),
+                'targets': [CallerId(code=126680003, number='203', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1442387091.556',
@@ -47,7 +47,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             ('on_transfer', {
                 'redirector': CallerId(code=126680001, number='201', is_public=True),
                 'party1': CallerId(code=126680002, number='202', is_public=True),
-                'party2': CallerId(code=126680003, number='203', is_public=True),
+                'party2': [CallerId(code=126680003, number='203', is_public=True)],
                 'new_id': 'vgua0-dev-1442387091.556',
                 'merged_id': 'vgua0-dev-1442387090.552',
             }),
@@ -89,7 +89,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1442387041.544',
                 'caller': CallerId(code=0, name='Foo bar', number='+31501234567', is_public=True),
-                'callee': CallerId(code=126680001, number='+31508009000', is_public=True),
+                'targets': [CallerId(code=126680001, number='+31508009000', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1442387041.544',
@@ -101,7 +101,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1442387044.548',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
-                'callee': CallerId(code=126680002, number='202', is_public=True),
+                'targets': [CallerId(code=126680002, number='202', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1442387044.548',
@@ -113,7 +113,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             ('on_transfer', {
                 'redirector': CallerId(code=126680001, number='201', is_public=True),
                 'party1': CallerId(code=0, name='Foo bar', number='+31501234567', is_public=True),
-                'party2': CallerId(code=126680002, number='202', is_public=True),
+                'party2': [CallerId(code=126680002, number='202', is_public=True)],
                 'new_id': 'vgua0-dev-1442387044.548',
                 'merged_id': 'vgua0-dev-1442387041.544',
             }),

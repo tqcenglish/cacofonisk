@@ -21,12 +21,12 @@ class TestSimpleOrig(ChannelEventsTestCase):
                 'call_id': '63f2f9ce924a-1501851189.231',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'callee': CallerId(code=150010003, number='203', is_public=True),
-                'hangups': [],
             }),
             ('on_hangup', {
                 'call_id': '63f2f9ce924a-1501851189.231',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'hangups': [(CallerId(code=150010003, number='203', is_public=True), 'completed')],
+                'callee': CallerId(code=150010003, number='203', is_public=True),
+                'reason': 'completed',
             }),
         ))
 
@@ -46,7 +46,8 @@ class TestSimpleOrig(ChannelEventsTestCase):
             ('on_hangup', {
                 'call_id': '63f2f9ce924a-1501851519.239',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'hangups': [(CallerId(code=150010001, number='201', is_public=True), 'busy')],
+                'callee': CallerId(code=150010001, number='201', is_public=True),
+                'reason': 'busy'
             }),
         ))
 
@@ -69,12 +70,12 @@ class TestSimpleOrig(ChannelEventsTestCase):
                 'call_id': 'ua0-acc-1506952916.1769',
                 'caller': CallerId(code=0, name='', number='+315080xxxxx', is_public=True),
                 'callee': CallerId(code=0, name='', number='+31612345678', is_public=True),
-                'hangups': [],
             }),
             ('on_hangup', {
                 'call_id': 'ua0-acc-1506952916.1769',
                 'caller': CallerId(code=0, name='', number='+315080xxxxx', is_public=True),
-                'hangups': [(CallerId(code=0, name='', number='+31853xxxxxx', is_public=True), 'completed')],
+                'callee': CallerId(code=0, name='', number='+31853xxxxxx', is_public=True),
+                'reason': 'completed',
             }),
         ))
 
@@ -96,7 +97,8 @@ class TestSimpleOrig(ChannelEventsTestCase):
             ('on_hangup', {
                 'call_id': 'ua0-acc-1507621393.1940',
                 'caller': CallerId(code=0, name='', number='+315080xxxxx', is_public=True),
-                'hangups': [(CallerId(code=0, name='', number='+31613925xxx', is_public=True), 'completed')],
+                'callee': CallerId(code=0, name='', number='+31613925xxx', is_public=True),
+                'reason': 'completed',
             }),
         ))
 
@@ -120,15 +122,12 @@ class TestSimpleOrig(ChannelEventsTestCase):
                 'call_id': '63f2f9ce924a-1501852169.254',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'callee': CallerId(code=150010001, number='401', is_public=True),
-                'hangups': [(CallerId(code=150010003, name='', number='401', is_public=True), 'answered-elsewhere')],
             }),
             ('on_hangup', {
                 'call_id': '63f2f9ce924a-1501852169.254',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'hangups': [
-                    (CallerId(code=150010001, number='401', is_public=True), 'completed'),
-                    (CallerId(code=150010003, name='', number='401', is_public=True), 'answered-elsewhere')
-                ],
+                'callee': CallerId(code=150010001, number='401', is_public=True),
+                'reason': 'completed'
             }),
         ))
 
@@ -149,7 +148,8 @@ class TestSimpleOrig(ChannelEventsTestCase):
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1508490698.34',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
-                'hangups': [(CallerId(code=150010004, number='204', is_public=True), 'cancelled')],
+                'callee': CallerId(code=150010004, number='204', is_public=True),
+                'reason': 'cancelled'
             }),
         ))
 
@@ -171,12 +171,12 @@ class TestSimpleOrig(ChannelEventsTestCase):
                 'call_id': '0f00dcaa884f-1508490669.30',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
                 'callee': CallerId(code=150010004, number='204', is_public=True),
-                'hangups': [],
             }),
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1508490669.30',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
-                'hangups': [(CallerId(code=150010004, number='204', is_public=True), 'completed')],
+                'callee': CallerId(code=150010004, number='204', is_public=True),
+                'reason': 'completed',
             }),
         ))
 
