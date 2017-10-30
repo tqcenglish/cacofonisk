@@ -105,7 +105,8 @@ class TestSimpleOrig(ChannelEventsTestCase):
         self.assertEqual(events, expected_events)
 
     def test_ab_callgroup(self):
-        """Test a simple call to a group where one phone is picked up.
+        """
+        Test a simple call to a group where one phone is picked up.
         """
         events = self.run_and_get_events('fixtures/simple/ab_callgroup.json')
 
@@ -128,6 +129,37 @@ class TestSimpleOrig(ChannelEventsTestCase):
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'callee': CallerId(code=150010001, number='401', is_public=True),
                 'reason': 'completed'
+            }),
+        ))
+
+        self.assertEqual(expected_events, events)
+
+    def test_ab_callgroup_failure(self):
+        """
+        Test a call to a group where no target picks up.
+        """
+        events = self.run_and_get_events('fixtures/simple/ab_callgroup_failure.json')
+
+        expected_events = self.events_from_tuples((
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509355567.22',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'targets': [
+                    CallerId(code=150010001, number='403', is_public=True),
+                    CallerId(code=150010003, number='403', is_public=True),
+                ],
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509355567.22',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                # TODO: Decide whether this callee and reason is OK.
+                # With a call with multiple dials, the callee and reason are
+                # taken from the last B to hang up. This may not be desirable.
+                # Instead, you could remove the callees from hangups entirely
+                # and use some other information to determine a reason (based
+                # on whether the call was picked up, for example).
+                'callee': CallerId(code=150010003, number='403', is_public=True),
+                'reason': 'rejected',
             }),
         ))
 
