@@ -60,7 +60,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_attended_transfer(self, call_id, merged_id, redirector, party1, party2):
+    def on_warm_transfer(self, call_id, merged_id, redirector, party1, party2):
         """
         Gets invoked when an attended transfer is completed.
 
@@ -81,7 +81,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_blind_transfer(self, call_id, merged_id, redirector, party1, targets):
+    def on_cold_transfer(self, call_id, merged_id, redirector, party1, targets):
         """
         Gets invoked when a blind or blonde transfer is completed.
 

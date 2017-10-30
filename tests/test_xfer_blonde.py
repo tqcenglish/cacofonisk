@@ -31,7 +31,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
-            ('on_blind_transfer', {
+            ('on_cold_transfer', {
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'party1': CallerId(code=150010001, number='201', is_public=True),
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
@@ -75,7 +75,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'targets': [CallerId(code=150010001, name='', number='201', is_public=True)],
             }),
-            ('on_blind_transfer', {
+            ('on_cold_transfer', {
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'party1': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
                 'targets': [CallerId(code=150010001, name='', number='201', is_public=True)],
@@ -130,7 +130,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'caller': CallerId(code=126680005, name='No NAT', number='205', is_public=True),
                 'targets': [CallerId(code=126680002, number='202', is_public=True)],
             }),
-            ('on_blind_transfer', {
+            ('on_cold_transfer', {
                 'redirector': CallerId(code=126680005, name='No NAT', number='205', is_public=True),
                 'party1': CallerId(number='+31507xxxxxx', is_public=False),
                 'targets': [CallerId(code=126680002, number='202', is_public=True)],
@@ -224,7 +224,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             # Again, the CLI-num for 126680002 is okay.
             # Ideally, I'd like to see +31507xxxxxx in CLI-num, but I
             # can live with 'P', since the is_public is False anyway.
-            ('on_blind_transfer', {
+            ('on_cold_transfer', {
                 'redirector': CallerId(code=126680002, number='+31507001918', is_public=True),
                 'party1': CallerId(number='P', is_public=False),  # +31507xxxxxx ?
                 'targets': [CallerId(code=126680005, number='205', is_public=True)],
@@ -284,11 +284,11 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
 
         self.assertEqual(expected_events, events)
 
-    def test_xfer_blonde_group(self):
+    def test_xfer_blonde_group_b(self):
         """
-        Test blonde transfer where the transfer target rejects the call.
+        Test blonde transfer where the call is transferred to a group by B.
         """
-        events = self.run_and_get_events('fixtures/xfer_blonde/xfer_blonde_group.json')
+        events = self.run_and_get_events('fixtures/xfer_blonde/xfer_blonde_group_b.json')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
@@ -309,7 +309,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                     CallerId(code=150010003, number='403', is_public=True),
                 ],
             }),
-            ('on_blind_transfer', {
+            ('on_cold_transfer', {
                 'new_id': '0f00dcaa884f-1509120257.78',
                 'merged_id': '0f00dcaa884f-1509120252.74',
                 'redirector': CallerId(code=150010004, name='Jonathan Carey', number='204', is_public=True),
@@ -327,6 +327,56 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1509120257.78',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'callee': CallerId(code=150010001, number='403', is_public=True),
+                'reason': 'completed',
+            }),
+        ))
+
+        self.assertEqual(expected_events, events)
+
+    def test_xfer_blonde_group_a(self):
+        """
+        Test blonde transfer where the call is transferred to a group by A.
+        """
+        events = self.run_and_get_events('fixtures/xfer_blonde/xfer_blonde_group_a.json')
+
+        expected_events = self.events_from_tuples((
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509353018.11',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'targets': [CallerId(code=150010004, number='204', is_public=True)],
+            }),
+            ('on_up', {
+                'call_id': '0f00dcaa884f-1509353018.11',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'callee': CallerId(code=150010004, number='204', is_public=True),
+            }),
+            ('on_b_dial', {
+                'call_id': '0f00dcaa884f-1509353024.15',
+                'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'targets': [
+                    CallerId(code=150010001, number='403', is_public=True),
+                    CallerId(code=150010003, number='403', is_public=True),
+                ],
+            }),
+            ('on_cold_transfer', {
+                'new_id': '0f00dcaa884f-1509353024.15',
+                'merged_id': '0f00dcaa884f-1509353018.11',
+                'redirector': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'party1': CallerId(code=150010004, number='204', is_public=True),
+                'targets': [
+                    CallerId(code=150010001, number='403', is_public=True),
+                    CallerId(code=150010003, number='403', is_public=True),
+                ],
+            }),
+            ('on_up', {
+                'call_id': '0f00dcaa884f-1509353024.15',
+                'caller': CallerId(code=150010004, number='204', is_public=True),
+                'callee': CallerId(code=150010001, number='403', is_public=True),
+            }),
+            ('on_hangup', {
+                'call_id': '0f00dcaa884f-1509353024.15',
+                'caller': CallerId(code=150010004, number='204', is_public=True),
                 'callee': CallerId(code=150010001, number='403', is_public=True),
                 'reason': 'completed',
             }),

@@ -15,7 +15,7 @@ class TestVarSet(ChannelEventsTestCase):
             def on_b_dial(self, call_id, caller, callee):
                 pass
 
-            def on_attended_transfer(self, new_id, merged_id, redirector, party1, party2):
+            def on_warm_transfer(self, new_id, merged_id, redirector, party1, party2):
                 pass
 
             def on_up(self, call_id, caller, callee):

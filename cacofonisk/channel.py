@@ -920,7 +920,7 @@ class ChannelManager(object):
                 # if the call was initiated on the A side, redirector_chan is
                 # the original call which we will end. If the transfer was
                 # initiated on the B side, then it's our dummy channel.
-                self.on_blind_transfer(a_chan.uniqueid, redirector_chan.uniqueid, redirector, party1, targets)
+                self.on_cold_transfer(a_chan.uniqueid, redirector_chan.uniqueid, redirector, party1, targets)
 
             elif 'call_forwarding_transfer' in a_chan.custom:
                 # Hey, a_chan was in a previous call which was forwarded. If
@@ -977,8 +977,8 @@ class ChannelManager(object):
                 # started the transfer. That means channel is bridged with B.
                 old_a_chan = channel
 
-            self.on_attended_transfer(target.uniqueid, old_a_chan.uniqueid,
-                                      target.callerid, transferred_channel.callerid, c_chan.callerid)
+            self.on_warm_transfer(target.uniqueid, old_a_chan.uniqueid,
+                                  target.callerid, transferred_channel.callerid, c_chan.callerid)
         else:
             # The redirector doesn't have an audio bridge with the new callee.
             # This means the redirector started the transfer before talking to
@@ -1000,7 +1000,7 @@ class ChannelManager(object):
 
             targets = [c_chan.callerid for c_chan in target.get_dialed_channels()]
 
-            self.on_blind_transfer(target.uniqueid, old_a_chan.uniqueid, target.callerid, new_caller.callerid, targets)
+            self.on_cold_transfer(target.uniqueid, old_a_chan.uniqueid, target.callerid, new_caller.callerid, targets)
 
     def _raw_blind_transfer(self, channel, target):
         """
@@ -1216,7 +1216,7 @@ class ChannelManager(object):
         self._reporter.trace_msg('{} ringing: {} --> {}'.format(call_id, caller, targets))
         self._reporter.on_b_dial(call_id, caller, targets)
 
-    def on_attended_transfer(self, call_id, merged_id, redirector, party1, party2):
+    def on_warm_transfer(self, call_id, merged_id, redirector, party1, party2):
         """
         Gets invoked when an attended transfer is completed.
 
@@ -1238,9 +1238,9 @@ class ChannelManager(object):
         self._reporter.trace_msg(
             '{} <== {} attn xfer: {} <--> {} (through {})'.format(call_id, merged_id, party1, party2, redirector),
         )
-        self._reporter.on_attended_transfer(call_id, merged_id, redirector, party1, party2)
+        self._reporter.on_warm_transfer(call_id, merged_id, redirector, party1, party2)
 
-    def on_blind_transfer(self, call_id, merged_id, redirector, party1, targets):
+    def on_cold_transfer(self, call_id, merged_id, redirector, party1, targets):
         """
         Gets invoked when a blind or blonde transfer is completed.
 
@@ -1271,7 +1271,7 @@ class ChannelManager(object):
         self._reporter.trace_msg(
             '{} <== {} bld xfer: {} <--> {} (through {})'.format(call_id, merged_id, party1, targets, redirector),
         )
-        self._reporter.on_blind_transfer(call_id, merged_id, redirector, party1, targets)
+        self._reporter.on_cold_transfer(call_id, merged_id, redirector, party1, targets)
 
     def on_forward(self, call_id, caller, loser, targets):
         """

@@ -29,7 +29,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
                 'targets': [CallerId(code=150010001, number='201', is_public=True)],
             }),
             # ... and immediately transfers 203 to 201
-            ('on_blind_transfer', {
+            ('on_cold_transfer', {
                 'redirector': CallerId(code=150010002, number='202', is_public=True),
                 'party1': CallerId(code=150010003, number='203', is_public=True),
                 'targets': [CallerId(code=150010001, number='201', is_public=True)],
@@ -80,7 +80,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
                 'targets': [CallerId(code=150010001, name='Robert Murray', number='201', is_public=True)],
             }),
             # ... and immediately transfers 203 to 201
-            ('on_blind_transfer', {
+            ('on_cold_transfer', {
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'party1': CallerId(code=150010003, number='203', is_public=True),
                 'targets': [CallerId(code=150010001, name='Robert Murray', number='201', is_public=True)],
@@ -141,7 +141,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             # Blind xfer.
             # (CLI for 126680002 is how it was reached externally,
             # that's okay.)
-            ('on_blind_transfer', {
+            ('on_cold_transfer', {
                 'redirector': CallerId(code=126680002, number='+31507001918', is_public=True),
                 'party1': CallerId(number='+31501234567', is_public=True),
                 'targets': [CallerId(code=126680005, number='205', is_public=True)],
@@ -242,7 +242,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
                 'caller': CallerId(code=150010004, number='204', is_public=True),
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
-            ('on_blind_transfer', {
+            ('on_cold_transfer', {
                 'redirector': CallerId(code=150010004, number='204', is_public=True),
                 'party1': CallerId(code=150010002, number='202', is_public=True),
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
@@ -285,7 +285,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
                     CallerId(code=150010003, number='403', is_public=True),
                 ],
             }),
-            ('on_blind_transfer', {
+            ('on_cold_transfer', {
                 'redirector': CallerId(code=150010004, number='204', is_public=True),
                 'party1': CallerId(code=150010002, number='202', is_public=True),
                 'targets': [

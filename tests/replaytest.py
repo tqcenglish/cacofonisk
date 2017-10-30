@@ -26,9 +26,9 @@ class TestReporter(BaseReporter):
             'targets': targets,
         })
 
-    def on_attended_transfer(self, new_id, merged_id, redirector, party1, party2):
+    def on_warm_transfer(self, new_id, merged_id, redirector, party1, party2):
         self.events.append({
-            'event': 'on_attended_transfer',
+            'event': 'on_warm_transfer',
             'redirector': redirector,
             'party1': party1,
             'party2': party2,
@@ -36,11 +36,11 @@ class TestReporter(BaseReporter):
             'merged_id': merged_id,
         })
 
-    def on_blind_transfer(self, call_id, merged_id, redirector, party1, targets):
+    def on_cold_transfer(self, call_id, merged_id, redirector, party1, targets):
         targets.sort(key=lambda callee: callee.code)
 
         self.events.append({
-            'event': 'on_blind_transfer',
+            'event': 'on_cold_transfer',
             'redirector': redirector,
             'party1': party1,
             'targets': targets,

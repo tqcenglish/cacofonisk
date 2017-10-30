@@ -44,7 +44,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             }),
 
             # 201 transfers 202 <-> 203
-            ('on_attended_transfer', {
+            ('on_warm_transfer', {
                 'redirector': CallerId(code=126680001, number='201', is_public=True),
                 'party1': CallerId(code=126680002, number='202', is_public=True),
                 'party2': CallerId(code=126680003, number='203', is_public=True),
@@ -102,7 +102,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             }),
 
             # 201 transfers +31501234567 <-> 202
-            ('on_attended_transfer', {
+            ('on_warm_transfer', {
                 'redirector': CallerId(code=126680001, number='201', is_public=True),
                 'party1': CallerId(code=0, name='Foo bar', number='+31501234567', is_public=True),
                 'party2': CallerId(code=126680002, number='202', is_public=True),
@@ -148,7 +148,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
                 'caller': CallerId(code=126680001, number='201', is_public=True),
                 'callee': CallerId(code=126680002, number='202', is_public=True),
             }),
-            ('on_attended_transfer', {
+            ('on_warm_transfer', {
                 'redirector': CallerId(code=126680001, number='201', is_public=True),
                 'party1': CallerId(code=0, name='Foo bar', number='+31501xxxxxx', is_public=False),
                 'party2': CallerId(code=126680002, number='202', is_public=True),
