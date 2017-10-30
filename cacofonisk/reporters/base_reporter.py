@@ -35,31 +35,6 @@ class BaseReporter(object):
         """
         pass
 
-    def on_transfer(self, call_id, merged_id, redirector, party1, party2):
-        """
-        Gets invoked when a call is transferred.
-
-        In the common case, a call transfer consists of three parties
-        where the redirector was speaking to party1 and party2. By
-        transferring the call, she ties party1 and party2 together and
-        leaves herself.
-
-        But there are other cases, including the case where the
-        redirector is the party that takes an incoming call and places
-        himself on end of the bridge. In that case he is both the
-        redirector and one of party1 or party2.
-
-        Args:
-            call_id (str): A unique identifier of this call.
-            merged_id (str): The unique identifier of the call being joined
-                with this call.
-            redirector (CallerId): The initiator of the transfer.
-            party1 (CallerId): One of the two parties that are tied
-                together.
-            party2 (CallerId): The other one.
-        """
-        pass
-
     def on_warm_transfer(self, call_id, merged_id, redirector, party1, party2):
         """
         Gets invoked when an attended transfer is completed.
@@ -146,9 +121,8 @@ class BaseReporter(object):
         Args:
             call_id (str): A unique identifier of the call.
             caller (CallerId): The initiator of the call.
-            targets (list): The recipient of the call.
+            targets (list): The recipients of the call.
         """
-        # FIXME docs is wrong.
         pass
 
     def on_user_event(self, event):

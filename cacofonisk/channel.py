@@ -615,10 +615,17 @@ class ChannelManager(object):
                 # reason is a keyword to identify why a conversation ended.
                 pass
 
-            def on_transfer(self, call_id, merged_id, transferor, party1, party1):
+            def on_warm_transfer(self, call_id, merged_id, transferor, party1, party1):
                 # Your code here. call_id and merged_id are unique strings to
                 # identify two conversations being merged into one.
-                # transferor, caller and callee are of type CallerId.
+                # transferor, party1 and party2 are of type CallerId.
+                pass
+
+            def on_cold_transfer(self, call_id, merged_id, transferor, party1, targets):
+                # Your code here. call_id and merged_id are unique strings to
+                # identify two conversations being merged into one.
+                # transferor and caller are of type CallerId. targets is a
+                # list of CallerID objects.
                 pass
 
             def on_user_event(self, event):
@@ -1212,7 +1219,6 @@ class ChannelManager(object):
             caller (CallerId): The initiator of the call.
             targets (list): A list of recipients of the call.
         """
-        # FIXME docs is wrong.
         self._reporter.trace_msg('{} ringing: {} --> {}'.format(call_id, caller, targets))
         self._reporter.on_b_dial(call_id, caller, targets)
 
