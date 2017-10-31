@@ -19,16 +19,19 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1502178068.16',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
+                'to_number': '201',
                 'targets': [CallerId(code=150010001, number='201', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '63f2f9ce924a-1502178068.16',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
+                'to_number': '201',
                 'callee': CallerId(code=150010001, number='201', is_public=True),
             }),
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1502178076.20',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
+                'to_number': '203',
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
             ('on_cold_transfer', {
@@ -41,12 +44,13 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_up', {
                 'call_id': '63f2f9ce924a-1502178076.20',
                 'caller': CallerId(code=150010001, number='201', is_public=True),
+                'to_number': '203',
                 'callee': CallerId(code=150010003, number='203', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': '63f2f9ce924a-1502178076.20',
                 'caller': CallerId(code=150010001, number='201', is_public=True),
-                'callee': CallerId(code=150010003, number='203', is_public=True),
+                'to_number': '203',
                 'reason': 'completed',
             }),
         ))
@@ -63,16 +67,19 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1502179190.24',
                 'caller': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
+                'to_number': '202',
                 'targets': [CallerId(code=150010002, number='202', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '63f2f9ce924a-1502179190.24',
                 'caller': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
+                'to_number': '202',
                 'callee': CallerId(code=150010002, number='202', is_public=True),
             }),
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1502179195.28',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
+                'to_number': '201',
                 'targets': [CallerId(code=150010001, name='', number='201', is_public=True)],
             }),
             ('on_cold_transfer', {
@@ -85,12 +92,13 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_up', {
                 'call_id': '63f2f9ce924a-1502179195.28',
                 'caller': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
+                'to_number': '201',
                 'callee': CallerId(code=150010001, name='', number='201', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': '63f2f9ce924a-1502179195.28',
                 'caller': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
-                'callee': CallerId(code=150010001, name='', number='201', is_public=True),
+                'to_number': '201',
                 'reason': 'completed',
             }),
         ))
@@ -110,6 +118,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443448768.113',
                 'caller': CallerId(number='+31507xxxxxx', is_public=False),
+                'to_number': '+31507001918',
                 'targets': [
                     CallerId(code=126680002, number='+31507001918', is_public=True),
                     CallerId(code=126680005, number='+31507001918', is_public=True),
@@ -118,6 +127,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_up', {
                 'call_id': 'vgua0-dev-1443448768.113',
                 'caller': CallerId(number='+31507xxxxxx', is_public=False),
+                'to_number': '+31507001918',
                 'callee': CallerId(code=126680005, number='+31507001918', is_public=True),
             }),
 
@@ -128,6 +138,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443448784.120',
                 'caller': CallerId(code=126680005, name='No NAT', number='205', is_public=True),
+                'to_number': '202',
                 'targets': [CallerId(code=126680002, number='202', is_public=True)],
             }),
             ('on_cold_transfer', {
@@ -140,12 +151,13 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_up', {
                 'call_id': 'vgua0-dev-1443448784.120',
                 'caller': CallerId(number='+31507xxxxxx', is_public=False),
+                'to_number': '202',
                 'callee': CallerId(code=126680002, number='202', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1443448784.120',
                 'caller': CallerId(number='+31507xxxxxx', is_public=False),
-                'callee': CallerId(code=126680002, number='202', is_public=True),
+                'to_number': '202',
                 'reason': 'completed',
             }),
         ))
@@ -181,9 +193,11 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443442620.82',
                 'caller': CallerId(number='+31507xxxxxx', is_public=False),
+                'to_number': '+31507001918',
                 'targets': [
                     CallerId(number='+31612345678', is_public=True),
-                    CallerId(code=126680002, number='+31507001918', is_public=True)
+                    CallerId(code=126680001, number='+31507001918', is_public=True),
+                    CallerId(code=126680002, number='+31507001918', is_public=True),
                 ],
             }),
 
@@ -191,6 +205,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_up', {
                 'call_id': 'vgua0-dev-1443442620.82',
                 'caller': CallerId(number='+31507xxxxxx', is_public=False),
+                'to_number': '+31507001918',
                 'callee': CallerId(code=126680002, number='+31507001918', is_public=True),
             }),
 
@@ -200,12 +215,13 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443442640.94',
                 'caller': CallerId(code=126680002, name='John 202 Doe', number='202', is_public=True),
+                'to_number': '205',
                 'targets': [CallerId(code=126680005, number='205', is_public=True)],
             }),
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1443442640.94',
                 'caller': CallerId(code=126680002, name='John 202 Doe', number='202', is_public=True),
-                'callee': CallerId(code=126680005, number='205', is_public=True),
+                'to_number': '205',
                 'reason': 'cancelled',
             }),
 
@@ -219,6 +235,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443442620.85',
                 'caller': CallerId(code=126680002, number='+31507001918', is_public=True),
+                'to_number': '205',
                 'targets': [CallerId(code=126680005, number='205', is_public=True)],
             }),
             # Again, the CLI-num for 126680002 is okay.
@@ -234,12 +251,13 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_up', {
                 'call_id': 'vgua0-dev-1443442620.82',
                 'caller': CallerId(number='P', is_public=False),  # Technically +31507xxxxxx
+                'to_number': '205',
                 'callee': CallerId(code=126680005, number='205', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1443442620.82',
                 'caller': CallerId(number='P', is_public=False),  # Technically +31507xxxxxx
-                'callee': CallerId(code=126680005, number='205', is_public=True),
+                'to_number': '205',
                 'reason': 'completed',
             }),
         ))
@@ -256,28 +274,31 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '0f00dcaa884f-1509119790.66',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'to_number': '204',
                 'targets': [CallerId(code=150010004, number='204', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '0f00dcaa884f-1509119790.66',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'to_number': '204',
                 'callee': CallerId(code=150010004, number='204', is_public=True),
             }),
             ('on_b_dial', {
                 'call_id': '0f00dcaa884f-1509119799.70',
                 'caller': CallerId(code=150010004, name='Jonathan Carey', number='204', is_public=True),
+                'to_number': '203',
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1509119799.70',
                 'caller': CallerId(code=150010004, name='Jonathan Carey', number='204', is_public=True),
-                'callee': CallerId(code=150010003, number='203', is_public=True),
-                'reason': 'rejected',
+                'to_number': '203',
+                'reason': 'no-answer',
             }),
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1509119790.66',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
-                'callee': CallerId(code=150010004, number='204', is_public=True),
+                'to_number': '204',
                 'reason': 'completed',
             }),
         ))
@@ -294,16 +315,19 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '0f00dcaa884f-1509120252.74',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'to_number': '204',
                 'targets': [CallerId(code=150010004, number='204', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '0f00dcaa884f-1509120252.74',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'to_number': '204',
                 'callee': CallerId(code=150010004, number='204', is_public=True),
             }),
             ('on_b_dial', {
                 'call_id': '0f00dcaa884f-1509120257.78',
                 'caller': CallerId(code=150010004, name='Jonathan Carey', number='204', is_public=True),
+                'to_number': '403',
                 'targets': [
                     CallerId(code=150010001, number='403', is_public=True),
                     CallerId(code=150010003, number='403', is_public=True),
@@ -322,12 +346,13 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_up', {
                 'call_id': '0f00dcaa884f-1509120257.78',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'to_number': '403',
                 'callee': CallerId(code=150010001, number='403', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1509120257.78',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
-                'callee': CallerId(code=150010001, number='403', is_public=True),
+                'to_number': '403',
                 'reason': 'completed',
             }),
         ))
@@ -344,16 +369,19 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': '0f00dcaa884f-1509353018.11',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'to_number': '204',
                 'targets': [CallerId(code=150010004, number='204', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '0f00dcaa884f-1509353018.11',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'to_number': '204',
                 'callee': CallerId(code=150010004, number='204', is_public=True),
             }),
             ('on_b_dial', {
                 'call_id': '0f00dcaa884f-1509353024.15',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
+                'to_number': '403',
                 'targets': [
                     CallerId(code=150010001, number='403', is_public=True),
                     CallerId(code=150010003, number='403', is_public=True),
@@ -372,12 +400,13 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             ('on_up', {
                 'call_id': '0f00dcaa884f-1509353024.15',
                 'caller': CallerId(code=150010004, number='204', is_public=True),
+                'to_number': '403',
                 'callee': CallerId(code=150010001, number='403', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1509353024.15',
                 'caller': CallerId(code=150010004, number='204', is_public=True),
-                'callee': CallerId(code=150010001, number='403', is_public=True),
+                'to_number': '403',
                 'reason': 'completed',
             }),
         ))

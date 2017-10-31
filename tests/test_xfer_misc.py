@@ -19,18 +19,20 @@ class TestMiscXfer(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1445001221.106',
                 'caller': CallerId(code=123450001, name='Alice', number='201', is_public=True),
+                'to_number': '202',
                 'targets': [CallerId(code=123450002, number='202', is_public=True)],
             }),
             ('on_forward', {
                 'call_id': 'vgua0-dev-1445001221.106',
                 'caller': CallerId(code=123450001, name='Alice', number='201', is_public=True),
+                'to_number': '202',
                 'loser': CallerId(code=123450002, number='202', is_public=True),
                 'targets': [CallerId(code=123450003, number='202', is_public=True)],
             }),
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1445001221.106',
                 'caller': CallerId(code=123450001, name='Alice', number='201', is_public=True),
-                'callee': CallerId(code=123450003, number='202', is_public=True),
+                'to_number': '202',
                 'reason': 'completed',
             }),
         ))
@@ -47,23 +49,26 @@ class TestMiscXfer(ChannelEventsTestCase):
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1444992672.12',
                 'caller': CallerId(code=123450001, name='Alice', number='201', is_public=True),
+                'to_number': '202',
                 'targets': [CallerId(code=123450002, number='202', is_public=True)],
             }),
             ('on_forward', {
                 'call_id': 'vgua0-dev-1444992672.12',
                 'caller': CallerId(code=123450001, name='Alice', number='201', is_public=True),
+                'to_number': '202',
                 'loser': CallerId(code=123450002, number='202', is_public=True),
                 'targets': [CallerId(code=123450003, number='203', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1444992672.12',
                 'caller': CallerId(code=123450001, name='Alice', number='201', is_public=True),
+                'to_number': '202',
                 'callee': CallerId(code=123450003, number='203', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1444992672.12',
                 'caller': CallerId(code=123450001, name='Alice', number='201', is_public=True),
-                'callee': CallerId(code=123450003, number='202', is_public=True),
+                'to_number': '202',
                 'reason': 'completed',
             })
         ))

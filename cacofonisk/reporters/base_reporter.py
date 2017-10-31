@@ -86,7 +86,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_forward(self, call_id, caller, loser, targets):
+    def on_forward(self, call_id, caller, to_number, loser, targets):
         """
         Gets invoked when a call is forwarded before being picked up.
 
@@ -104,13 +104,14 @@ class BaseReporter(object):
         Args:
             call_id (str): The unique ID of the resulting call.
             caller (CallerId): The caller being forwarded.
+            to_number (str): The number being dialed by the caller.
             loser (CallerId): The party who was originally called.
             targets (list): A list of CallerId's to whom the call is being
                 forwarded.
         """
         pass
 
-    def on_b_dial(self, call_id, caller, targets):
+    def on_b_dial(self, call_id, caller, to_number, targets):
         """
         Gets invoked when the B side of a call is initiated.
 
@@ -121,6 +122,7 @@ class BaseReporter(object):
         Args:
             call_id (str): A unique identifier of the call.
             caller (CallerId): The initiator of the call.
+            to_number (str): The number being dialed by the caller.
             targets (list): The recipients of the call.
         """
         pass
@@ -137,7 +139,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_up(self, call_id, caller, callee):
+    def on_up(self, call_id, caller, to_number, callee):
         """Track when a call has been set up between two parties.
 
         In simple calls, a "up" event is raised when a call has been ringing
@@ -147,17 +149,18 @@ class BaseReporter(object):
         Args:
             call_id (str): A unique identifier of the call.
             caller (CallerId): The initiator of the call.
+            to_number (str): The number being dialed by the caller.
             callee (CallerId): The recipient of the call.
         """
         pass
 
-    def on_hangup(self, call_id, caller, callee, reason):
+    def on_hangup(self, call_id, caller, to_number, reason):
         """Track when a call between two parties has ended.
 
         Args:
             call_id (str): A unique identifier of the call.
             caller (CallerId): The initiator of the call.
-            callee (CallerId): The recipient of the call.
+            to_number (str): The number being dialed by the caller.
             reason (str): A textual reason as to why the call was ended.
         """
         pass

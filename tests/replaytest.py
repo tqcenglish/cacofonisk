@@ -16,13 +16,14 @@ class TestReporter(BaseReporter):
         super(TestReporter, self).__init__()
         self.events = []
 
-    def on_b_dial(self, call_id, caller, targets):
+    def on_b_dial(self, call_id, caller, to_number, targets):
         targets.sort(key=lambda callee: callee.code)
 
         self.events.append({
             'event': 'on_b_dial',
             'call_id': call_id,
             'caller': caller,
+            'to_number': to_number,
             'targets': targets,
         })
 
@@ -48,30 +49,32 @@ class TestReporter(BaseReporter):
             'merged_id': merged_id,
         })
 
-    def on_forward(self, call_id, caller, loser, targets):
+    def on_forward(self, call_id, caller, to_number, loser, targets):
         targets.sort(key=lambda callee: callee.code)
 
         self.events.append({
             'event': 'on_forward',
             'call_id': call_id,
             'caller': caller,
+            'to_number': to_number,
             'loser': loser,
             'targets': targets,
         })
 
-    def on_up(self, call_id, caller, callee):
+    def on_up(self, call_id, caller, to_number, callee):
         self.events.append({
             'event': 'on_up',
             'caller': caller,
+            'to_number': to_number,
             'callee': callee,
             'call_id': call_id,
         })
 
-    def on_hangup(self, call_id, caller, callee, reason):
+    def on_hangup(self, call_id, caller, to_number, reason):
         self.events.append({
             'event': 'on_hangup',
             'caller': caller,
-            'callee': callee,
+            'to_number': to_number,
             'reason': reason,
             'call_id': call_id,
         })
