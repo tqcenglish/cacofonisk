@@ -998,7 +998,7 @@ class ChannelManager(object):
                 # only send an event for the channel with the lowest uniqueid.
                 # if not a_chan.is_up:
                 open_dials = a_chan.get_dialed_channels()
-                targets = [dial.callerid for dial in open_dials] + a_chan.hangups
+                targets = [dial.callerid for dial in open_dials]
 
                 for b_chan in open_dials:
                     if b_chan == channel:

@@ -199,7 +199,6 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'to_number': '+31507001918',
                 'targets': [
                     CallerId(number='+31612345678', is_public=True),
-                    CallerId(code=126680001, number='+31507001918', is_public=True),
                     CallerId(code=126680002, number='+31507001918', is_public=True),
                 ],
             }),
