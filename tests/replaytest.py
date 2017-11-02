@@ -27,26 +27,27 @@ class TestReporter(BaseReporter):
             'targets': targets,
         })
 
-    def on_warm_transfer(self, new_id, merged_id, redirector, party1, party2):
+    def on_warm_transfer(self, new_id, merged_id, redirector, caller, callee):
         self.events.append({
             'event': 'on_warm_transfer',
             'redirector': redirector,
-            'party1': party1,
-            'party2': party2,
+            'caller': caller,
+            'callee': callee,
             'new_id': new_id,
             'merged_id': merged_id,
         })
 
-    def on_cold_transfer(self, call_id, merged_id, redirector, party1, targets):
+    def on_cold_transfer(self, call_id, merged_id, redirector, caller, to_number, targets):
         targets.sort(key=lambda callee: callee.code)
 
         self.events.append({
             'event': 'on_cold_transfer',
             'redirector': redirector,
-            'party1': party1,
+            'caller': caller,
             'targets': targets,
             'new_id': call_id,
             'merged_id': merged_id,
+            'to_number': to_number,
         })
 
     def on_forward(self, call_id, caller, to_number, loser, targets):
@@ -121,8 +122,8 @@ class ChannelEventsTestCase(BaseTestCase):
                  'callee': CallerId(126680003, '', '203', True)},
                 {'event': 'on_transfer',
                  'redirector': CallerId(126680001, '', '201', True),
-                 'party1': CallerId(126680002, '', '202', True),
-                 'party2': CallerId(126680003, '', '203', True)},
+                 'caller': CallerId(126680002, '', '202', True),
+                 'callee': CallerId(126680003, '', '203', True)},
             ])
 
         Args:
@@ -160,8 +161,8 @@ class ChannelEventsTestCase(BaseTestCase):
                 "And a few more comments",
                 {'event': 'on_transfer',
                  'redirector': [126680001, '', '201', True],
-                 'party1': [126680002, '', '202', True],
-                 'party2': [126680003, '', '203', True]},
+                 'caller': [126680002, '', '202', True],
+                 'callee': [126680003, '', '203', True]},
             ])
             events == tuple([
                 {'event': 'on_b_dial',
@@ -169,8 +170,8 @@ class ChannelEventsTestCase(BaseTestCase):
                  'callee': CallerId(126680003, '', '203', True)},
                 {'event': 'on_transfer',
                  'redirector': CallerId(126680001, '', '201', True),
-                 'party1': CallerId(126680002, '', '202', True),
-                 'party2': CallerId(126680003, '', '203', True)},
+                 'caller': CallerId(126680002, '', '202', True),
+                 'callee': CallerId(126680003, '', '203', True)},
             ])
 
         Args:

@@ -35,7 +35,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_warm_transfer(self, call_id, merged_id, redirector, party1, party2):
+    def on_warm_transfer(self, call_id, merged_id, redirector, caller, destination):
         """
         Gets invoked when an attended transfer is completed.
 
@@ -49,14 +49,14 @@ class BaseReporter(object):
             merged_id (str): The unique ID of the call which will end.
             redirector (CallerId): The caller ID of the party performing the
                 transfer.
-            party1 (CallerId): The caller ID of the party which has been
+            caller (CallerId): The caller ID of the party which has been
                 transferred.
-            party2 (CallerId): The caller ID of the party which received the
+            destination (CallerId): The caller ID of the party which received the
                 transfer.
         """
         pass
 
-    def on_cold_transfer(self, call_id, merged_id, redirector, party1, targets):
+    def on_cold_transfer(self, call_id, merged_id, redirector, caller, to_number, targets):
         """
         Gets invoked when a blind or blonde transfer is completed.
 
@@ -79,8 +79,9 @@ class BaseReporter(object):
             merged_id (str): The unique ID of the call which will end.
             redirector (CallerId): The caller ID of the party performing the
                 transfer.
-            party1 (CallerId): The caller ID of the party which has been
+            caller (CallerId): The caller ID of the party which has been
                 transferred.
+            to_number (str): The number being dialed by the caller.
             targets (list): A list of CallerId objects whose phones are
                 ringing for this transfer.
         """

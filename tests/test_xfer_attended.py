@@ -50,8 +50,8 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             # 201 transfers 202 <-> 203
             ('on_warm_transfer', {
                 'redirector': CallerId(code=126680001, number='201', is_public=True),
-                'party1': CallerId(code=126680002, number='202', is_public=True),
-                'party2': CallerId(code=126680003, number='203', is_public=True),
+                'caller': CallerId(code=126680002, number='202', is_public=True),
+                'callee': CallerId(code=126680003, number='203', is_public=True),
                 'new_id': 'vgua0-dev-1442387091.556',
                 'merged_id': 'vgua0-dev-1442387090.552',
             }),
@@ -112,8 +112,8 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             # 201 transfers +31501234567 <-> 202
             ('on_warm_transfer', {
                 'redirector': CallerId(code=126680001, number='201', is_public=True),
-                'party1': CallerId(code=0, name='Foo bar', number='+31501234567', is_public=True),
-                'party2': CallerId(code=126680002, number='202', is_public=True),
+                'caller': CallerId(code=0, name='Foo bar', number='+31501234567', is_public=True),
+                'callee': CallerId(code=126680002, number='202', is_public=True),
                 'new_id': 'vgua0-dev-1442387044.548',
                 'merged_id': 'vgua0-dev-1442387041.544',
             }),
@@ -162,8 +162,8 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             }),
             ('on_warm_transfer', {
                 'redirector': CallerId(code=126680001, number='201', is_public=True),
-                'party1': CallerId(code=0, name='Foo bar', number='+31501xxxxxx', is_public=False),
-                'party2': CallerId(code=126680002, number='202', is_public=True),
+                'caller': CallerId(code=0, name='Foo bar', number='+31501xxxxxx', is_public=False),
+                'callee': CallerId(code=126680002, number='202', is_public=True),
                 'new_id': 'vgua0-dev-1444635718.1182',
                 'merged_id': 'vgua0-dev-1444635717.1178',
             }),

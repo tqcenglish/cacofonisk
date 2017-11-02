@@ -855,7 +855,7 @@ class ChannelManager(object):
             if event['TransferType'] == 'Attended':
                 self._raw_attended_transfer(channel, target)
             elif event['TransferType'] == 'Blind':
-                self._raw_blind_transfer(channel, target, event)
+                self._raw_blind_transfer(channel, target, event['TransferExten'])
             else:
                 raise NotImplementedError(event)
 
@@ -931,7 +931,6 @@ class ChannelManager(object):
                 redirector_chan, side = a_chan.custom.pop('raw_blind_transfer')
 
                 redirector = redirector_chan.callerid
-                party1 = a_chan.callerid
                 target_chans = a_chan.get_dialed_channels()
                 targets = [party.callerid for party in target_chans]
 
@@ -978,7 +977,8 @@ class ChannelManager(object):
                 # if the call was initiated on the A side, redirector_chan is
                 # the original call which we will end. If the transfer was
                 # initiated on the B side, then it's our dummy channel.
-                self.on_cold_transfer(a_chan.uniqueid, redirector_chan.uniqueid, redirector, party1, targets)
+                self.on_cold_transfer(a_chan.uniqueid, redirector_chan.uniqueid,
+                                      redirector, a_chan.callerid, redirector_chan.exten, targets)
 
             elif 'call_forwarding_transfer' in a_chan.custom:
                 # Hey, a_chan was in a previous call which was forwarded. If
@@ -1063,9 +1063,10 @@ class ChannelManager(object):
             old_a_chan.clear_hangups()
 
             targets = [c_chan.callerid for c_chan in target.get_dialed_channels()]
-            self.on_cold_transfer(target.uniqueid, old_a_chan.uniqueid, target.callerid, new_caller.callerid, targets)
+            self.on_cold_transfer(target.uniqueid, old_a_chan.uniqueid,
+                                  target.callerid, new_caller.callerid, target.exten, targets)
 
-    def _raw_blind_transfer(self, channel, target, event):
+    def _raw_blind_transfer(self, channel, target, transfer_exten):
         """
         Handle a blind (cold) transfer event.
 
@@ -1076,14 +1077,14 @@ class ChannelManager(object):
         Args:
             channel (Channel): The channel to be transferred.
             target (Channel): The target channel.
-            event (Event): The raw event data.
+            transfer_exten (str): The phone number being transferred to.
         """
         if channel.back_dial:
             target.custom['raw_blind_transfer'] = (channel, 'B')
         else:
             target.custom['raw_blind_transfer'] = (channel, 'A')
 
-        channel._exten = event['TransferExten']
+        channel._exten = transfer_exten
 
     def _raw_pickup_transfer(self, winner, loser):
         """
@@ -1255,7 +1256,7 @@ class ChannelManager(object):
     # Actual event handlers you should override
     # ===================================================================
 
-    def on_b_dial(self, call_id, caller, destination_number, targets):
+    def on_b_dial(self, call_id, caller, to_number, targets):
         """
         Gets invoked when the B side of a call is initiated.
 
@@ -1266,13 +1267,13 @@ class ChannelManager(object):
         Args:
             call_id (str): Unique call ID string.
             caller (CallerId): The initiator of the call.
-            destination_number (str): The number which was dialed by the user.
+            to_number (str): The number which was dialed by the user.
             targets (list): A list of recipients of the call.
         """
-        self._reporter.trace_msg('{} ringing: {} --> {} ({})'.format(call_id, caller, destination_number, targets))
-        self._reporter.on_b_dial(call_id, caller, destination_number, targets)
+        self._reporter.trace_msg('{} ringing: {} --> {} ({})'.format(call_id, caller, to_number, targets))
+        self._reporter.on_b_dial(call_id, caller, to_number, targets)
 
-    def on_warm_transfer(self, call_id, merged_id, redirector, party1, party2):
+    def on_warm_transfer(self, call_id, merged_id, redirector, caller, destination):
         """
         Gets invoked when an attended transfer is completed.
 
@@ -1286,17 +1287,17 @@ class ChannelManager(object):
             merged_id (str): The unique ID of the call which will end.
             redirector (CallerId): The caller ID of the party performing the
                 transfer.
-            party1 (CallerId): The caller ID of the party which has been
+            caller (CallerId): The caller ID of the party which has been
                 transferred.
-            party2 (CallerId): The caller ID of the party which received the
+            destination (CallerId): The caller ID of the party which received the
                 transfer.
         """
         self._reporter.trace_msg(
-            '{} <== {} attn xfer: {} <--> {} (through {})'.format(call_id, merged_id, party1, party2, redirector),
+            '{} <== {} attn xfer: {} <--> {} (through {})'.format(call_id, merged_id, caller, destination, redirector),
         )
-        self._reporter.on_warm_transfer(call_id, merged_id, redirector, party1, party2)
+        self._reporter.on_warm_transfer(call_id, merged_id, redirector, caller, destination)
 
-    def on_cold_transfer(self, call_id, merged_id, redirector, party1, targets):
+    def on_cold_transfer(self, call_id, merged_id, redirector, caller, to_number, targets):
         """
         Gets invoked when a blind or blonde transfer is completed.
 
@@ -1319,17 +1320,18 @@ class ChannelManager(object):
             merged_id (str): The unique ID of the call which will end.
             redirector (CallerId): The caller ID of the party performing the
                 transfer.
-            party1 (CallerId): The caller ID of the party which has been
+            caller (CallerId): The caller ID of the party which has been
                 transferred.
+            to_number (str): The number which was dialed by the user.
             targets (list): A list of CallerId objects whose phones are
                 ringing for this transfer.
         """
         self._reporter.trace_msg(
-            '{} <== {} bld xfer: {} <--> {} (through {})'.format(call_id, merged_id, party1, targets, redirector),
+            '{} <== {} bld xfer: {} <--> {} (through {})'.format(call_id, merged_id, caller, targets, redirector),
         )
-        self._reporter.on_cold_transfer(call_id, merged_id, redirector, party1, targets)
+        self._reporter.on_cold_transfer(call_id, merged_id, redirector, caller, to_number, targets)
 
-    def on_forward(self, call_id, caller, destination_number, loser, targets):
+    def on_forward(self, call_id, caller, to_number, loser, targets):
         """
         Gets invoked when a call is forwarded before being picked up.
 
@@ -1347,15 +1349,15 @@ class ChannelManager(object):
         Args:
             call_id (str): The unique ID of the resulting call.
             caller (CallerId): The caller being forwarded.
-            destination_number (str): The number which was dialed by the user.
+            to_number (str): The number which was dialed by the user.
             loser (CallerId): The party who was originally called.
             targets (list): A list of CallerId's to whom the call is being
                 forwarded.
         """
         self._reporter.trace_msg(
-            '{} forwarding: {} --> {} ({})'.format(call_id, caller, destination_number, targets)
+            '{} forwarding: {} --> {} ({})'.format(call_id, caller, to_number, targets)
         )
-        self._reporter.on_forward(call_id, caller, destination_number, loser, targets)
+        self._reporter.on_forward(call_id, caller, to_number, loser, targets)
 
     def on_user_event(self, event):
         """Handle custom UserEvent messages from Asterisk.
@@ -1370,7 +1372,7 @@ class ChannelManager(object):
         self._reporter.trace_msg('user_event: {}'.format(event))
         self._reporter.on_user_event(event)
 
-    def on_up(self, call_id, caller, destination_number, callee):
+    def on_up(self, call_id, caller, to_number, callee):
         """Gets invoked when a call is connected.
 
         When two sides have connected and engaged in a conversation, an "up"
@@ -1381,13 +1383,13 @@ class ChannelManager(object):
         Args:
             call_id (str): Unique call ID string.
             caller (CallerId): The initiator of the call.
-            destination_number (str): The number which was dialed by the user.
+            to_number (str): The number which was dialed by the user.
             callee (CallerId): The recipient of the call.
         """
-        self._reporter.trace_msg('{} up: {} --> {} ({})'.format(call_id, caller, destination_number, callee))
-        self._reporter.on_up(call_id, caller, destination_number, callee)
+        self._reporter.trace_msg('{} up: {} --> {} ({})'.format(call_id, caller, to_number, callee))
+        self._reporter.on_up(call_id, caller, to_number, callee)
 
-    def on_hangup(self, call_id, caller, destination_number, reason):
+    def on_hangup(self, call_id, caller, to_number, reason):
         """Gets invoked when a call is completed.
 
         There are two types of events which should be monitored to determine
@@ -1399,14 +1401,14 @@ class ChannelManager(object):
         Args:
             call_id (str): Unique call ID string.
             caller (CallerId): The initiator of the call.
-            destination_number (str): The number which was dialed by the user.
+            to_number (str): The number which was dialed by the user.
             reason (str): Why the call ended (completed, no-answer, busy,
                 failed, answered-elsewhere).
         """
         self._reporter.trace_msg(
-            '{} hangup: {} --> {} (reason: {})'.format(call_id, caller, destination_number, reason)
+            '{} hangup: {} --> {} (reason: {})'.format(call_id, caller, to_number, reason)
         )
-        self._reporter.on_hangup(call_id, caller, destination_number, reason)
+        self._reporter.on_hangup(call_id, caller, to_number, reason)
 
 
 class DebugChannelManager(ChannelManager):

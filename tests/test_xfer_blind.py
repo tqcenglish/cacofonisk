@@ -34,16 +34,17 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             # ... and immediately transfers 203 to 201
             ('on_cold_transfer', {
                 'redirector': CallerId(code=150010002, number='202', is_public=True),
-                'party1': CallerId(code=150010003, number='203', is_public=True),
+                'caller': CallerId(code=150010003, number='203', is_public=True),
                 'targets': [CallerId(code=150010001, number='201', is_public=True)],
                 'new_id': '63f2f9ce924a-1501834121.34',
-                'merged_id': '63f2f9ce924a-1501834121.35'
+                'merged_id': '63f2f9ce924a-1501834121.35',
+                'to_number': '201',
             }),
             # 201 picks up to talk to 203
             ('on_up', {
                 'call_id': '63f2f9ce924a-1501834121.34',
                 'caller': CallerId(code=150010003, number='203', is_public=True),
-                'to_number': '201',  # FIXME this should be 201.
+                'to_number': '201',
                 'callee': CallerId(code=150010001, number='201', is_public=True),
             }),
             # 203 and 201 are done
@@ -89,10 +90,11 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             # ... and immediately transfers 203 to 201
             ('on_cold_transfer', {
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
-                'party1': CallerId(code=150010003, number='203', is_public=True),
+                'caller': CallerId(code=150010003, number='203', is_public=True),
                 'targets': [CallerId(code=150010001, name='Robert Murray', number='201', is_public=True)],
                 'new_id': '63f2f9ce924a-1501834980.45',
-                'merged_id': '63f2f9ce924a-1501834972.41'
+                'merged_id': '63f2f9ce924a-1501834972.41',
+                'to_number': '201',
             }),
             # 201 picks up to talk to 203
             ('on_up', {
@@ -154,10 +156,11 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             # that's okay.)
             ('on_cold_transfer', {
                 'redirector': CallerId(code=126680002, number='+31507001918', is_public=True),
-                'party1': CallerId(number='+31501234567', is_public=True),
+                'caller': CallerId(number='+31501234567', is_public=True),
                 'targets': [CallerId(code=126680005, number='205', is_public=True)],
                 'new_id': 'vgua0-dev-1443449049.124',
                 'merged_id': 'vgua0-dev-1443449049.125',
+                'to_number': '205',
             }),
 
             ('on_up', {
@@ -263,10 +266,11 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             }),
             ('on_cold_transfer', {
                 'redirector': CallerId(code=150010004, number='204', is_public=True),
-                'party1': CallerId(code=150010002, number='202', is_public=True),
+                'caller': CallerId(code=150010002, number='202', is_public=True),
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
                 'new_id': '0f00dcaa884f-1509116084.19',
                 'merged_id': '0f00dcaa884f-1509116084.20',
+                'to_number': '203',
             }),
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1509116084.19',
@@ -308,13 +312,14 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             }),
             ('on_cold_transfer', {
                 'redirector': CallerId(code=150010004, number='204', is_public=True),
-                'party1': CallerId(code=150010002, number='202', is_public=True),
+                'caller': CallerId(code=150010002, number='202', is_public=True),
                 'targets': [
                     CallerId(code=150010001, number='403', is_public=True),
                     CallerId(code=150010003, number='403', is_public=True),
                 ],
                 'new_id': '0f00dcaa884f-1509117819.36',
                 'merged_id': '0f00dcaa884f-1509117819.37',
+                'to_number': '403',
             }),
             ('on_up', {
                 'call_id': '0f00dcaa884f-1509117819.36',
