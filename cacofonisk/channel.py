@@ -245,7 +245,7 @@ class Channel(object):
         Returns:
             bool: True if this channel is calling other channels, else False.
         """
-        return self.fwd_dials or self._side == 'A'
+        return self._side == 'A'
 
     @property
     def is_called_chan(self):
@@ -255,7 +255,7 @@ class Channel(object):
         Returns:
             bool: True if this channel is being called, False otherwise.
         """
-        return self.back_dial or self._side == 'B'
+        return self._side == 'B'
 
     def set_name(self, name):
         """
@@ -304,16 +304,12 @@ class Channel(object):
         self._trace('set_state {} -> {}'.format(old_state, self._state))
 
         if old_state == AST_STATE_DOWN and self._state in (AST_STATE_DIALING, AST_STATE_RING, AST_STATE_UP):
-            self._side = 'A'
             self._channel_manager._raw_a_dial(self)
         elif old_state == AST_STATE_DOWN and self._state == AST_STATE_RINGING:
-            self._side = 'B'
             self._channel_manager._raw_b_dial(self)
         elif old_state == AST_STATE_RING and self._state == AST_STATE_UP:
-            self._side = 'A'
             self._channel_manager._raw_a_up(self)
         elif old_state == AST_STATE_RINGING and self._state == AST_STATE_UP:
-            self._side = 'B'
             self._channel_manager._raw_b_up(self)
         else:
             self._trace('Unimplemented state update: {} -> {}'.format(old_state, self._state))
@@ -913,6 +909,7 @@ class ChannelManager(object):
         Args:
             channel (Channel):
         """
+        channel._side = 'A'
         pass
 
     def _raw_b_dial(self, channel):
@@ -922,6 +919,8 @@ class ChannelManager(object):
         Args:
             channel (Channel): The channel of the B side.
         """
+        channel._side = 'B'
+
         if channel.is_sip:
             if 'ignore_b_dial' in channel.custom:
                 # Notifications were already sent for this channel.
@@ -930,13 +929,14 @@ class ChannelManager(object):
                 return
 
             a_chan = channel.get_dialing_channel()
+            a_chan._side = 'A'
 
             if 'raw_blind_transfer' in a_chan.custom:
                 # This is an interesting exception: we got a Blind
                 # Transfer message earlier and recorded it in this
                 # attribute. We'll translate this b_dial to first a
                 # on_b_dial and then the on_transfer event.
-                redirector_chan, side = a_chan.custom.pop('raw_blind_transfer')
+                redirector_chan = a_chan.custom.pop('raw_blind_transfer')
 
                 redirector = redirector_chan.callerid
                 target_chans = a_chan.get_dialed_channels()
@@ -962,12 +962,11 @@ class ChannelManager(object):
                 # It's important that a b_dial has been sent for the call
                 # we're going to be left with afterwards, but also that the
                 # call ID is different from the call before the transfer.
-                if side == 'A':
+                if redirector_chan.is_calling_chan:
                     # This transfer was initiated on the A side, which means
                     # we're going to be left with B -> C afterwards. No dial
                     # event was triggered with B as caller, so we should do
                     # that now.
-                    a_chan._side = 'A'
                     self.on_b_dial(a_chan.uniqueid, redirector, a_chan.exten, targets)
                 else:
                     # This transfer was initiated on the B side, which means
@@ -1019,9 +1018,6 @@ class ChannelManager(object):
                 redirector used to set up the call to the person to whom the
                 call is being transferred.
         """
-        # channel is a redirector, which means it doesn't take sides.
-        channel._side = None
-
         if target.is_bridged:
             # The redirector already has an audio bridge open with the new
             # callee. This means that we're handling an attended transfer.
@@ -1029,7 +1025,7 @@ class ChannelManager(object):
             transferred_channel = channel.bridged_channel
             c_chan = target.bridged_channel
 
-            if channel.back_dial:
+            if channel.is_called_chan:
                 # Channel has a back dial, meaning it was B who started the
                 # transfer. That means channel is bridged with A.
                 old_a_chan = channel.bridged_channel
@@ -1038,6 +1034,10 @@ class ChannelManager(object):
                 # started the transfer. That means channel is bridged with B.
                 old_a_chan = channel
 
+                # Mark the channel as being transferred so we don't send
+                # hangup notifications for it.
+                channel.custom['ignore_a_hangup'] = True
+
             self.on_warm_transfer(target.uniqueid, old_a_chan.uniqueid,
                                   target.callerid, transferred_channel.callerid, c_chan.callerid)
         else:
@@ -1045,18 +1045,26 @@ class ChannelManager(object):
             # This means the redirector started the transfer before talking to
             # the redirection target, which is a blonde transfer.
 
-            if channel.back_dial:
+            if channel.is_called_chan:
                 # The transferrer was the B side.
                 old_a_chan = channel.get_dialing_channel()
                 new_caller = old_a_chan
-            elif channel.fwd_dials:
+            elif channel.is_calling_chan:
                 # The transferrer was the A side.
                 old_a_chan = channel
+
+                # Because the channel is not bridged, figuring out who the
+                # redirector first talked to is a bit more complicated.
+                # Fortunately, there should only be one open dial left.
                 dialed_channels = channel.get_dialed_channels()
                 assert len(dialed_channels) == 1
                 new_caller = list(dialed_channels)[0]
+
+                # Mark the channel as ignored so we don't send another
+                # hangup notification after the transfer.
+                channel.custom['ignore_a_hangup'] = True
             else:
-                # This channel doesn't have any dials. Probably garbage data.
+                # This channel doesn't have sides. Probably garbage data.
                 return
 
             targets = [c_chan.callerid for c_chan in target.get_dialed_channels()]
@@ -1077,13 +1085,13 @@ class ChannelManager(object):
             transfer_exten (str): The phone number being transferred to.
         """
         if channel.is_called_chan:
-            target.custom['raw_blind_transfer'] = (channel, 'B')
+            target.custom['raw_blind_transfer'] = channel
         else:
-            target.custom['raw_blind_transfer'] = (channel, 'A')
+            target.custom['raw_blind_transfer'] = channel
 
-        # channel is the redirector, and a redirector doesn't take sides.
-        channel._side = None
-
+        # Mark the original channel as ignored, so we don't report a hangup
+        # just after the transfer.
+        channel.custom['ignore_a_hangup'] = True
         channel._exten = transfer_exten
 
     def _raw_call_pickup(self, winner, loser):
@@ -1111,6 +1119,8 @@ class ChannelManager(object):
         Args:
             channel (Channel): The relevant A side channel.
         """
+        channel._side = 'A'
+
         if channel.is_sip:
             a_chan = channel
             b_chans = channel.get_dialed_channels()
@@ -1125,6 +1135,8 @@ class ChannelManager(object):
         Args:
             channel (Channel): The relevant B side channel.
         """
+        channel._side = 'B'
+
         if channel.is_sip:
             a_chan = channel.get_dialing_channel()
             b_chan = channel
@@ -1147,9 +1159,9 @@ class ChannelManager(object):
                 # Ideally, we would simulate a full blind transfer having been
                 # completed but hanged up with an error. However, no channel
                 # to the third party has been created.
-                redirector, side = channel.custom.pop('raw_blind_transfer')
+                redirector = channel.custom.pop('raw_blind_transfer')
 
-                if side == 'A':
+                if redirector.is_calling_chan:
                     a_chan = redirector
                     b_chan = channel
                 else:
@@ -1158,6 +1170,12 @@ class ChannelManager(object):
 
                 # TODO: Maybe give another status code than 'completed' here?
                 self.on_a_hangup(a_chan.uniqueid, a_chan.callerid, b_chan.callerid.number, 'completed')
+
+            elif 'ignore_a_hangup' in channel.custom:
+                # This is a calling channel which performed an attended
+                # transfer. Because the call has already been "hanged up"
+                # with the transfer, we shouldn't send a hangup notification.
+                pass
 
             elif channel.is_calling_chan:
                 # The caller is being disconnected, so we should notify the
