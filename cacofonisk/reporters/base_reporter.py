@@ -87,31 +87,6 @@ class BaseReporter(object):
         """
         pass
 
-    def on_forward(self, call_id, caller, to_number, loser, targets):
-        """
-        Gets invoked when a call is forwarded before being picked up.
-
-        There are two known situations when this may occur.
-
-        The first is call forwarding. Some phones support setting a call
-        forwarding destination, meaning calls which are not picked up on the
-        phone itself are forwarded to someone else.
-
-        The second is call pickup. Phones can be configured in Asterisk to be
-        in a call pickup group. If one of the phones is the group rings,
-        another phone in the group can type in a special sequence and hijack
-        the call so they can answer the call themselves.
-
-        Args:
-            call_id (str): The unique ID of the resulting call.
-            caller (CallerId): The caller being forwarded.
-            to_number (str): The number being dialed by the caller.
-            loser (CallerId): The party who was originally called.
-            targets (list): A list of CallerId's to whom the call is being
-                forwarded.
-        """
-        pass
-
     def on_b_dial(self, call_id, caller, to_number, targets):
         """
         Gets invoked when the B side of a call is initiated.
@@ -156,7 +131,8 @@ class BaseReporter(object):
         pass
 
     def on_hangup(self, call_id, caller, to_number, reason):
-        """Track when a call between two parties has ended.
+        """
+        Track when a call ends for a caller.
 
         Args:
             call_id (str): A unique identifier of the call.

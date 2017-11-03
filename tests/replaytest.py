@@ -1,7 +1,7 @@
 import os
 
 from cacofonisk import BaseReporter
-from cacofonisk.channel import CallerId, ChannelManager
+from cacofonisk.channel import ChannelManager
 from cacofonisk.runners.file_runner import FileRunner
 from cacofonisk.utils.testcases import BaseTestCase
 
@@ -48,18 +48,6 @@ class TestReporter(BaseReporter):
             'new_id': call_id,
             'merged_id': merged_id,
             'to_number': to_number,
-        })
-
-    def on_forward(self, call_id, caller, to_number, loser, targets):
-        targets.sort(key=lambda callee: callee.code)
-
-        self.events.append({
-            'event': 'on_forward',
-            'call_id': call_id,
-            'caller': caller,
-            'to_number': to_number,
-            'loser': loser,
-            'targets': targets,
         })
 
     def on_up(self, call_id, caller, to_number, callee):
@@ -141,61 +129,6 @@ class ChannelEventsTestCase(BaseTestCase):
 
         return tuple(results)
 
-    def events_from_jdictlist(cls, jdictlist):
-        """
-        Convert a list of dictionaries to the expected event list.
-
-        The dictionaries are expected to be passed from a json file.
-        This method ensures that the caller/callee/etc parameters are
-        converted to CallerId objects.
-
-        Example::
-
-            events = events_from_jdictlist([
-                "A few comments are allowed",
-                "here and there",
-                {'event': 'on_b_dial',
-                 'caller': [126680001, '', '201', True],
-                 'callee': [126680003, '', '203', True]},
-
-                "And a few more comments",
-                {'event': 'on_transfer',
-                 'redirector': [126680001, '', '201', True],
-                 'caller': [126680002, '', '202', True],
-                 'callee': [126680003, '', '203', True]},
-            ])
-            events == tuple([
-                {'event': 'on_b_dial',
-                 'caller': CallerId(126680001, '', '201', True),
-                 'callee': CallerId(126680003, '', '203', True)},
-                {'event': 'on_transfer',
-                 'redirector': CallerId(126680001, '', '201', True),
-                 'caller': CallerId(126680002, '', '202', True),
-                 'callee': CallerId(126680003, '', '203', True)},
-            ])
-
-        Args:
-            jdictlist: A list of dictionaries, see example.
-
-        Returns:
-            tuple: A tuple of dictionaries, see example.
-        """
-        ret = []
-
-        for event_dict in jdictlist:
-            if isinstance(event_dict, str):
-                pass  # ignore comment-strings
-            elif isinstance(event_dict, dict):
-                new_dict = event_dict.copy()
-                for key, value in new_dict.items():
-                    if isinstance(value, list):
-                        new_dict[key] = CallerId(*value)
-                ret.append(new_dict)
-            else:
-                raise NotImplementedError()
-
-        return tuple(ret)
-
     def run_and_get_events(self, filename, reporter=None):
         absolute_path = os.path.join(os.path.dirname(__file__), filename)
 
@@ -207,21 +140,3 @@ class ChannelEventsTestCase(BaseTestCase):
 
         assert len(runner.channel_managers) == 1
         return tuple(reporter.events)
-
-    def run_and_get_events_partial(self, filename):
-        """
-        Run and get the events with one line less, each time it is run.
-
-        Args:
-            filename (str): File with events in json format.
-        Yields:
-            A tuple of the channelmanager's output of the partial log.
-        """
-        events = self.load_events_from_disk(filename)
-        while len(events) != 0:
-            events.pop(0)
-            reporter = TestReporter()
-            runner = BogoRunner(events=events, reporter=reporter)
-            runner.run()
-            assert len(runner.channel_managers) == 1
-            yield tuple(reporter.events)
