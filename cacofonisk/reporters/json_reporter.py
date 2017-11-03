@@ -12,7 +12,8 @@ class JsonReporter(BaseReporter):
     Usage:
         reporter = JsonReporter('path/to/file.json')
     """
-    def __init__(self, path='test.json', *args, **kwargs):
+    def __init__(self, path, *, logger=None):
+        super().__init__(logger=logger)
         self.path = path
 
     def trace_ami(self, event):

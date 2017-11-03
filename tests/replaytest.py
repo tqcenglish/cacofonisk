@@ -1,3 +1,4 @@
+import logging
 import os
 
 from cacofonisk import BaseReporter
@@ -74,9 +75,11 @@ class BogoRunner(object):
         self.events = events
         self.reporter = reporter
         self.channel_managers = []
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.CRITICAL)
 
     def run(self):
-        channelmgr = ChannelManager(reporter=self.reporter)
+        channelmgr = ChannelManager(reporter=self.reporter, logger=self.logger)
         for event in self.events:
             if ('*' in channelmgr.INTERESTING_EVENTS or
                     event['Event'] in channelmgr.INTERESTING_EVENTS):

@@ -1,22 +1,20 @@
+import logging
+
+
 class BaseReporter(object):
     """
     BaseReporter is a skeleton baseclass for any Reporter classes. The methods
     can be overwritten. See class:`ChannelManager` to see where these methods
     are called.
     """
+    def __init__(self, *, logger=None):
+        self.logger = logger if logger is not None else logging.getLogger(__name__)
+
     def trace_ami(self, event):
         """Log the full AMI event before it's being processed.
 
         Args:
             event (Message): Dict-like object with all attributes in the event.
-        """
-        pass
-
-    def trace_msg(self, msg):
-        """Log a diagnostic message before calling one of the events below.
-
-        Args:
-            msg (str): A log string.
         """
         pass
 
@@ -54,7 +52,9 @@ class BaseReporter(object):
             destination (CallerId): The caller ID of the party which received the
                 transfer.
         """
-        pass
+        self.logger.info(
+            '{} <== {} attn xfer: {} <--> {} (through {})'.format(call_id, merged_id, caller, destination, redirector),
+        )
 
     def on_cold_transfer(self, call_id, merged_id, redirector, caller, to_number, targets):
         """
@@ -85,7 +85,9 @@ class BaseReporter(object):
             targets (list): A list of CallerId objects whose phones are
                 ringing for this transfer.
         """
-        pass
+        self.logger.info(
+            '{} <== {} bld xfer: {} <--> {} (through {})'.format(call_id, merged_id, caller, targets, redirector),
+        )
 
     def on_b_dial(self, call_id, caller, to_number, targets):
         """
@@ -101,7 +103,7 @@ class BaseReporter(object):
             to_number (str): The number being dialed by the caller.
             targets (list): The recipients of the call.
         """
-        pass
+        self.logger.info('{} ringing: {} --> {} ({})'.format(call_id, caller, to_number, targets))
 
     def on_user_event(self, event):
         """Handle custom UserEvent messages from Asterisk.
@@ -113,7 +115,7 @@ class BaseReporter(object):
         Args:
             event (Message): Dict-like object with all attributes in the event.
         """
-        pass
+        self.logger.info('user_event: {}'.format(event))
 
     def on_up(self, call_id, caller, to_number, callee):
         """Track when a call has been set up between two parties.
@@ -128,7 +130,7 @@ class BaseReporter(object):
             to_number (str): The number being dialed by the caller.
             callee (CallerId): The recipient of the call.
         """
-        pass
+        self.logger.info('{} up: {} --> {} ({})'.format(call_id, caller, to_number, callee))
 
     def on_hangup(self, call_id, caller, to_number, reason):
         """
@@ -140,4 +142,4 @@ class BaseReporter(object):
             to_number (str): The number being dialed by the caller.
             reason (str): A textual reason as to why the call was ended.
         """
-        pass
+        self.logger.info('{} hangup: {} --> {} (reason: {})'.format(call_id, caller, to_number, reason))
