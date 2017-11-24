@@ -99,7 +99,7 @@ class Channel(object):
         self._state = int(event['ChannelState'])  # 0, Down
         self._bridged = set()
         self._exten = event['Exten']
-        self._direction = None
+        self._direction = 'unknown'
 
         self._side = None
 
@@ -233,6 +233,36 @@ class Channel(object):
             bool: True if this channel is being called, False otherwise.
         """
         return self._side == 'B'
+
+    @property
+    def direction(self):
+        """
+        Get the direction of this channel (inbound, outbound, internal).
+
+        Returns:
+            str
+        """
+        if self._direction == 'unknown':
+            a_chan = b_chan = None
+
+            if self.is_called_chan:
+                a_chan = self.get_dialing_channel()
+                b_chan = self
+            elif self.is_calling_chan:
+                a_chan = self
+                b_chans = self.get_dialed_channels()
+                if b_chans:
+                    b_chan = next(iter(b_chans))
+
+            if a_chan and b_chan:
+                if 'voipgrid-siproute' in a_chan.name:
+                    self._direction = 'inbound'
+                elif 'voipgrid-siproute' in b_chan.name:
+                    self._direction = 'outbound'
+                else:
+                    self._direction = 'internal'
+
+        return self._direction
 
     def set_name(self, name):
         """
@@ -443,6 +473,7 @@ class Channel(object):
         # so we can write to the old one.
         self.custom = other.custom
         self._callerid = other.callerid
+        self._direction = other.direction
 
         self._trace('do_masquerade -> {!r} {!r}'.format(self, other))
 
@@ -847,7 +878,7 @@ class ChannelManager(object):
             # incoming channel and local bridge together (until the incoming
             # and destination channels are bridged). This in turn makes
             # get_dialing_channel() return the back part of the local bridge
-            # (before the masquarade) or just the destination channel. This
+            # (before the masquerade) or just the destination channel. This
             # makes Cacofonisk call hooks with bogus data.
             #
             # The way to remedy this is by tracking the AgentCalled events,
@@ -944,16 +975,15 @@ class ChannelManager(object):
                     # we're going to be left with B -> C afterwards. No dial
                     # event was triggered with B as caller, so we should do
                     # that now.
-                    self.on_b_dial(a_chan.uniqueid, redirector, a_chan.exten, targets,
-                                   self._get_direction(redirector_chan, channel))
+                    self.on_b_dial(a_chan.uniqueid, redirector, a_chan.exten, targets, redirector_chan.direction)
                 else:
                     # This transfer was initiated on the B side, which means
                     # we're going to be left with A -> C afterwards. A dial
                     # event with A was already generated, so we could (ab)use
                     # any old channel here to simulate a merged call.
                     # So why specifically use redirector_chan? Just read on...
-                    self.on_b_dial(redirector_chan.uniqueid, redirector, redirector_chan.exten, targets,
-                                   self._get_direction(redirector_chan, channel))
+                    self.on_b_dial(
+                        redirector_chan.uniqueid, redirector, redirector_chan.exten, targets,redirector_chan.direction)
 
                 # Now it's time to send a transfer event. dialing_channel is
                 # always the channel we're going to be left with (regardless
@@ -979,8 +1009,7 @@ class ChannelManager(object):
                     if b_chan == channel:
                         # Ensure a notification is only sent once.
                         self.on_b_dial(
-                            a_chan.uniqueid, a_chan.callerid, a_chan.exten, targets,
-                            self._get_direction(a_chan, b_chan)
+                            a_chan.uniqueid, a_chan.callerid, a_chan.exten, targets, a_chan.direction
                         )
                     else:
                         # To prevent notifications from being sent multiple times,
@@ -1105,10 +1134,7 @@ class ChannelManager(object):
             b_chans = channel.get_dialed_channels()
             for b_chan in b_chans:
                 if b_chan.is_up:
-                    self.on_up(
-                        a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid,
-                        self._get_direction(a_chan, b_chan)
-                    )
+                    self.on_up(a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid, a_chan.direction)
 
     def _raw_b_up(self, channel):
         """
@@ -1123,10 +1149,7 @@ class ChannelManager(object):
             a_chan = channel.get_dialing_channel()
             b_chan = channel
             if a_chan.is_up:
-                self.on_up(
-                    a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid,
-                    self._get_direction(a_chan, b_chan)
-                )
+                self.on_up(a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid, a_chan.direction)
 
     def _raw_hangup(self, channel, event):
         """
@@ -1155,8 +1178,8 @@ class ChannelManager(object):
                     b_chan = redirector
 
                 # TODO: Maybe give another status code than 'completed' here?
-                self.on_a_hangup(a_chan.uniqueid, a_chan.callerid, b_chan.callerid.number, 'completed',
-                                 self._get_direction(a_chan, b_chan))
+                self.on_a_hangup(
+                    a_chan.uniqueid, a_chan.callerid, b_chan.callerid.number, 'completed', a_chan.direction)
 
             elif 'ignore_a_hangup' in channel.custom:
                 # This is a calling channel which performed an attended
@@ -1199,24 +1222,7 @@ class ChannelManager(object):
                 else:
                     reason = 'failed'
 
-                if 'voipgrid-siproute' in channel.name:
-                    direction = 'inbound'
-                elif 'b_chan_direction' in channel.custom:
-                    direction = channel.custom.pop('b_chan_direction')
-                elif channel.get_dialed_channels():
-                    dialed_channels = channel.get_dialed_channels()
-                    direction = self._get_direction(channel, list(dialed_channels)[0])
-                else:
-                    direction = 'unknown'
-
-                self.on_a_hangup(channel.uniqueid, channel.callerid, channel.exten, reason, direction)
-            elif channel.is_called_chan and channel.get_dialing_channel() != channel:
-                # We have a relevant B channel which still has open dials and
-                # is being hanged up. Since A is hanged up later, this is our
-                # last chance to check the call direction, which we can store
-                # with A.
-                a_chan = channel.get_dialing_channel()
-                a_chan.custom['b_chan_direction'] = self._get_direction(a_chan, channel)
+                self.on_a_hangup(channel.uniqueid, channel.callerid, channel.exten, reason, channel.direction)
 
         # We've sent all relevant notifications regarding the channel
         # being gone, so we can forget it ourselves now as well.
@@ -1230,24 +1236,6 @@ class ChannelManager(object):
         # If we don't have any channels, check whether we're completely clean.
         if not len(self._registry):
             self._reporter.trace_msg('(no channels left)')
-
-    def _get_direction(self, a_chan, b_chan):
-        """
-        Determine whether the call is inbound, outbound or internal.
-
-        Args:
-            a_chan (Channel): The calling channel.
-            b_chan (Channel): The called channel.
-
-        Returns:
-            str
-        """
-        if 'voipgrid-siproute' in a_chan.name:
-            return 'inbound'
-        elif 'voipgrid-siproute' in b_chan.name:
-            return 'outbound'
-        else:
-            return 'internal'
 
     # ===================================================================
     # Actual event handlers you should override

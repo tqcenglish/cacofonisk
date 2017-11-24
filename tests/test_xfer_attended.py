@@ -74,6 +74,8 @@ class TestAttnXferOrig(ChannelEventsTestCase):
 
     def test_xfer_abbcac(self):
         """
+        Test an attended transfer where B transfers the call.
+
         First of all, we need to get notifications that calls are being
         made:
         - +31501234567 calls 201 (126680001)
