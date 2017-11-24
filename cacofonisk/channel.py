@@ -982,8 +982,8 @@ class ChannelManager(object):
                     # event with A was already generated, so we could (ab)use
                     # any old channel here to simulate a merged call.
                     # So why specifically use redirector_chan? Just read on...
-                    self.on_b_dial(
-                        redirector_chan.uniqueid, redirector, redirector_chan.exten, targets,redirector_chan.direction)
+                    self.on_b_dial(redirector_chan.uniqueid,
+                                   redirector, redirector_chan.exten, targets, redirector_chan.direction)
 
                 # Now it's time to send a transfer event. dialing_channel is
                 # always the channel we're going to be left with (regardless
@@ -994,8 +994,8 @@ class ChannelManager(object):
                 # if the call was initiated on the A side, redirector_chan is
                 # the original call which we will end. If the transfer was
                 # initiated on the B side, then it's our dummy channel.
-                self.on_cold_transfer(a_chan.uniqueid, redirector_chan.uniqueid,
-                                      redirector, a_chan.callerid, redirector_chan.exten, targets)
+                self.on_cold_transfer(a_chan.uniqueid, redirector_chan.uniqueid, redirector,
+                                      a_chan.callerid, redirector_chan.exten, targets, a_chan.direction)
             else:
                 # We'll want to send one ringing event for all targets. So
                 # let's figure out to whom a_chan has open dials. To ensure
@@ -1049,8 +1049,8 @@ class ChannelManager(object):
                 # hangup notifications for it.
                 channel.custom['ignore_a_hangup'] = True
 
-            self.on_warm_transfer(target.uniqueid, old_a_chan.uniqueid,
-                                  target.callerid, transferred_channel.callerid, c_chan.callerid)
+            self.on_warm_transfer(target.uniqueid, old_a_chan.uniqueid, target.callerid,
+                                  transferred_channel.callerid, c_chan.callerid, transferred_channel.direction)
         else:
             # The redirector doesn't have an audio bridge with the new callee.
             # This means the redirector started the transfer before talking to
@@ -1079,8 +1079,8 @@ class ChannelManager(object):
                 return
 
             targets = [c_chan.callerid for c_chan in target.get_dialed_channels()]
-            self.on_cold_transfer(target.uniqueid, old_a_chan.uniqueid,
-                                  target.callerid, new_caller.callerid, target.exten, targets)
+            self.on_cold_transfer(target.uniqueid, old_a_chan.uniqueid, target.callerid,
+                                  new_caller.callerid, target.exten, targets, new_caller.direction)
 
     def _raw_blind_transfer(self, channel, target, transfer_exten):
         """
@@ -1262,7 +1262,7 @@ class ChannelManager(object):
         )
         self._reporter.on_b_dial(call_id, caller, to_number, targets, direction)
 
-    def on_warm_transfer(self, call_id, merged_id, redirector, caller, destination):
+    def on_warm_transfer(self, call_id, merged_id, redirector, caller, destination, direction):
         """
         Gets invoked when an attended transfer is completed.
 
@@ -1280,13 +1280,16 @@ class ChannelManager(object):
                 transferred.
             destination (CallerId): The caller ID of the party which received the
                 transfer.
+            direction (str): The direction of the call. Can be inbound,
+                outbound or internal.
         """
-        self._reporter.trace_msg(
-            '{} <== {} attn xfer: {} <--> {} (through {})'.format(call_id, merged_id, caller, destination, redirector),
-        )
-        self._reporter.on_warm_transfer(call_id, merged_id, redirector, caller, destination)
+        self._reporter.trace_msg('{} <== {} {} attn xfer: {} <--> {} (through {})'.format(
+            call_id, direction, merged_id, caller, destination, redirector
+        ))
 
-    def on_cold_transfer(self, call_id, merged_id, redirector, caller, to_number, targets):
+        self._reporter.on_warm_transfer(call_id, merged_id, redirector, caller, destination, direction)
+
+    def on_cold_transfer(self, call_id, merged_id, redirector, caller, to_number, targets, direction):
         """
         Gets invoked when a blind or blonde transfer is completed.
 
@@ -1314,11 +1317,14 @@ class ChannelManager(object):
             to_number (str): The number which was dialed by the user.
             targets (list): A list of CallerId objects whose phones are
                 ringing for this transfer.
+            direction (str): The direction of the call. Can be inbound,
+                outbound or internal.
         """
-        self._reporter.trace_msg(
-            '{} <== {} bld xfer: {} <--> {} (through {})'.format(call_id, merged_id, caller, targets, redirector),
-        )
-        self._reporter.on_cold_transfer(call_id, merged_id, redirector, caller, to_number, targets)
+        self._reporter.trace_msg('{} <== {} bld xfer: {} <--> {} (through {})'.format(
+            call_id, merged_id, caller, targets, redirector, direction
+        ))
+
+        self._reporter.on_cold_transfer(call_id, merged_id, redirector, caller, to_number, targets, direction)
 
     def on_user_event(self, event):
         """Handle custom UserEvent messages from Asterisk.

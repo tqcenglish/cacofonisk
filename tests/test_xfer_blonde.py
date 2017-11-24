@@ -39,6 +39,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
             ('on_cold_transfer', {
+                'direction': 'internal',
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'caller': CallerId(code=150010001, number='201', is_public=True),
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
@@ -93,6 +94,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'targets': [CallerId(code=150010001, name='', number='201', is_public=True)],
             }),
             ('on_cold_transfer', {
+                'direction': 'internal',
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'caller': CallerId(code=150010003, name='Julia Rhodes', number='203', is_public=True),
                 'targets': [CallerId(code=150010001, name='', number='201', is_public=True)],
@@ -158,6 +160,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 'targets': [CallerId(code=126680002, number='202', is_public=True)],
             }),
             ('on_cold_transfer', {
+                'direction': 'inbound',
                 'redirector': CallerId(code=126680005, name='No NAT', number='205', is_public=True),
                 'caller': CallerId(code=12668, number='+31507xxxxxx', is_public=False),
                 'targets': [CallerId(code=126680002, number='202', is_public=True)],
@@ -264,6 +267,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             # Ideally, I'd like to see +31507xxxxxx in CLI-num, but I
             # can live with 'P', since the is_public is False anyway.
             ('on_cold_transfer', {
+                'direction': 'inbound',
                 'redirector': CallerId(code=126680002, number='+31507001918', is_public=True),
                 'caller': CallerId(code=12668, number='P', is_public=False),  # +31507xxxxxx ?
                 'targets': [CallerId(code=126680005, number='205', is_public=True)],
@@ -367,6 +371,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 ],
             }),
             ('on_cold_transfer', {
+                'direction': 'internal',
                 'new_id': '0f00dcaa884f-1509120257.78',
                 'merged_id': '0f00dcaa884f-1509120252.74',
                 'redirector': CallerId(code=150010004, name='Jonathan Carey', number='204', is_public=True),
@@ -427,6 +432,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
                 ],
             }),
             ('on_cold_transfer', {
+                'direction': 'internal',
                 'new_id': '0f00dcaa884f-1509353024.15',
                 'merged_id': '0f00dcaa884f-1509353018.11',
                 'redirector': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),

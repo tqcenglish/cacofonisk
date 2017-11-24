@@ -15,7 +15,7 @@ class TestVarSet(ChannelEventsTestCase):
             def on_b_dial(self, call_id, caller, to_number, callee, direction):
                 pass
 
-            def on_warm_transfer(self, new_id, merged_id, redirector, caller, callee):
+            def on_warm_transfer(self, new_id, merged_id, redirector, caller, callee, direction):
                 pass
 
             def on_up(self, call_id, caller, to_number, callee, direction):

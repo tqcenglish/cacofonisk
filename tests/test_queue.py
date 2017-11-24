@@ -132,6 +132,7 @@ class TestQueue(ChannelEventsTestCase):
                 'callee': CallerId(code=150010003, number='203', is_public=True),
             }),
             ('on_warm_transfer', {
+                'direction': 'inbound',
                 'new_id': 'e83df36bebbe-1507037917.120',
                 'merged_id': 'e83df36bebbe-1507037906.116',
                 'caller': CallerId(code=15001, number='+31150010001', is_public=True),
@@ -178,6 +179,7 @@ class TestQueue(ChannelEventsTestCase):
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
             ('on_cold_transfer', {
+                'direction': 'inbound',
                 'new_id': 'e83df36bebbe-1507042413.128',
                 'merged_id': 'e83df36bebbe-1507042415.129',
                 'caller': CallerId(code=15001, number='+31150010001', is_public=True),

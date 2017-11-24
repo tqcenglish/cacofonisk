@@ -36,6 +36,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             }),
             # ... and immediately transfers 203 to 201
             ('on_cold_transfer', {
+                'direction': 'internal',
                 'redirector': CallerId(code=150010002, number='202', is_public=True),
                 'caller': CallerId(code=150010003, number='203', is_public=True),
                 'targets': [CallerId(code=150010001, number='201', is_public=True)],
@@ -97,6 +98,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             }),
             # ... and immediately transfers 203 to 201
             ('on_cold_transfer', {
+                'direction': 'internal',
                 'redirector': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'caller': CallerId(code=150010003, number='203', is_public=True),
                 'targets': [CallerId(code=150010001, name='Robert Murray', number='201', is_public=True)],
@@ -168,6 +170,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
             # (CLI for 126680002 is how it was reached externally,
             # that's okay.)
             ('on_cold_transfer', {
+                'direction': 'inbound',
                 'redirector': CallerId(code=126680002, number='+31507001918', is_public=True),
                 'caller': CallerId(code=12668, number='+31501234567', is_public=True),
                 'targets': [CallerId(code=126680005, number='205', is_public=True)],
@@ -289,6 +292,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
             ('on_cold_transfer', {
+                'direction': 'internal',
                 'redirector': CallerId(code=150010004, number='204', is_public=True),
                 'caller': CallerId(code=150010002, number='202', is_public=True),
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
@@ -339,6 +343,7 @@ class TestBlindXferOrig(ChannelEventsTestCase):
                 ],
             }),
             ('on_cold_transfer', {
+                'direction': 'internal',
                 'redirector': CallerId(code=150010004, number='204', is_public=True),
                 'caller': CallerId(code=150010002, number='202', is_public=True),
                 'targets': [
