@@ -22,12 +22,14 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             # 201 calls 202
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1442387090.552',
+                'direction': 'internal',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
                 'to_number': '202',
                 'targets': [CallerId(code=126680002, number='202', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1442387090.552',
+                'direction': 'internal',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
                 'to_number': '202',
                 'callee': CallerId(code=126680002, number='202', is_public=True),
@@ -36,12 +38,14 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             # 201 calls 203
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1442387091.556',
+                'direction': 'internal',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
                 'to_number': '203',
                 'targets': [CallerId(code=126680003, number='203', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1442387091.556',
+                'direction': 'internal',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
                 'to_number': '203',
                 'callee': CallerId(code=126680003, number='203', is_public=True),
@@ -59,6 +63,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             # 202 and 203 are done
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1442387091.556',
+                'direction': 'internal',
                 'caller': CallerId(code=126680002, number='202', is_public=True),
                 'to_number': '203',
                 'reason': 'completed',
@@ -84,12 +89,14 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             # +31501234567 calls 201
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1442387041.544',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, name='Foo bar', number='+31501234567', is_public=True),
                 'to_number': '+31508009000',
                 'targets': [CallerId(code=126680001, number='+31508009000', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1442387041.544',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, name='Foo bar', number='+31501234567', is_public=True),
                 'to_number': '+31508009000',
                 'callee': CallerId(code=126680001, number='+31508009000', is_public=True),
@@ -98,12 +105,14 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             # 201 calls 202
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1442387044.548',
+                'direction': 'internal',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
                 'to_number': '202',
                 'targets': [CallerId(code=126680002, number='202', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1442387044.548',
+                'direction': 'internal',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
                 'to_number': '202',
                 'callee': CallerId(code=126680002, number='202', is_public=True),
@@ -121,6 +130,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             # +31501234567 and 202 are done
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1442387044.548',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, name='Foo bar', number='+31501234567', is_public=True),
                 'to_number': '202',
                 'reason': 'completed',
@@ -138,24 +148,28 @@ class TestAttnXferOrig(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1444635717.1178',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, name='Foo bar', number='+31501xxxxxx', is_public=False),
                 'to_number': '+31507654321',
                 'targets': [CallerId(code=126680001, number='+31507654321', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1444635717.1178',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, name='Foo bar', number='+31501xxxxxx', is_public=False),
                 'to_number': '+31507654321',
                 'callee': CallerId(code=126680001, number='+31507654321', is_public=True),
             }),
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1444635718.1182',
+                'direction': 'internal',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
                 'to_number': '202',
                 'targets': [CallerId(code=126680002, number='202', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'vgua0-dev-1444635718.1182',
+                'direction': 'internal',
                 'caller': CallerId(code=126680001, number='201', is_public=True),
                 'to_number': '202',
                 'callee': CallerId(code=126680002, number='202', is_public=True),
@@ -169,6 +183,7 @@ class TestAttnXferOrig(ChannelEventsTestCase):
             }),
             ('on_hangup', {
                 'call_id': 'vgua0-dev-1444635718.1182',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, name='Foo bar', number='+31501xxxxxx', is_public=False),
                 'to_number': '202',
                 'reason': 'completed',

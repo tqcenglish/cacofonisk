@@ -17,18 +17,21 @@ class TestCallAcceptance(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': 'ua0-acc-1506952916.1769',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'targets': [CallerId(code=0, number='+31612345678', is_public=True)],
             }),
             ('on_up', {
                 'call_id': 'ua0-acc-1506952916.1769',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'callee': CallerId(code=12668, number='+31612345678', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': 'ua0-acc-1506952916.1769',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'reason': 'completed',
@@ -50,6 +53,7 @@ class TestCallAcceptance(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': 'ua0-acc-1507798662.2063',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'targets': [
@@ -60,12 +64,14 @@ class TestCallAcceptance(ChannelEventsTestCase):
             # +31508012345 picks up, +31613925xxx keeps ringing until 1 is pressed.
             ('on_up', {
                 'call_id': 'ua0-acc-1507798662.2063',
+                'direction': 'inbound',
                 'to_number': '+31853xxxxxx',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'callee': CallerId(code=12668, number='+31508012345', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': 'ua0-acc-1507798662.2063',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'reason': 'completed',
@@ -88,6 +94,7 @@ class TestCallAcceptance(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': 'ua0-acc-1507800454.2085',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'targets': [
@@ -98,12 +105,14 @@ class TestCallAcceptance(ChannelEventsTestCase):
             # +31613925xxx also picks up, and does accept
             ('on_up', {
                 'call_id': 'ua0-acc-1507800454.2085',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'callee': CallerId(code=12668, number='+31613925xxx', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': 'ua0-acc-1507800454.2085',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'reason': 'completed',
@@ -122,12 +131,14 @@ class TestCallAcceptance(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': 'ua0-acc-1507621393.1940',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'targets': [CallerId(code=0, number='+31613925xxx', is_public=True)],
             }),
             ('on_hangup', {
                 'call_id': 'ua0-acc-1507621393.1940',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'reason': 'no-answer',
@@ -146,12 +157,14 @@ class TestCallAcceptance(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': 'ua0-acc-1507624765.2057',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'targets': [CallerId(code=0, number='+31613925xxx', is_public=True)],
             }),
             ('on_hangup', {
                 'call_id': 'ua0-acc-1507624765.2057',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'reason': 'no-answer',
@@ -170,12 +183,14 @@ class TestCallAcceptance(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': 'ua0-acc-1507624058.2045',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'targets': [CallerId(code=0, number='+31613925xxx', is_public=True)],
             }),
             ('on_hangup', {
                 'call_id': 'ua0-acc-1507624058.2045',
+                'direction': 'inbound',
                 'caller': CallerId(code=12668, number='+315080xxxxx', is_public=True),
                 'to_number': '+31853xxxxxx',
                 'reason': 'no-answer',

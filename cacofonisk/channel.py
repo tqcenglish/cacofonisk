@@ -99,6 +99,7 @@ class Channel(object):
         self._state = int(event['ChannelState'])  # 0, Down
         self._bridged = set()
         self._exten = event['Exten']
+        self._direction = None
 
         self._side = None
 
@@ -943,14 +944,16 @@ class ChannelManager(object):
                     # we're going to be left with B -> C afterwards. No dial
                     # event was triggered with B as caller, so we should do
                     # that now.
-                    self.on_b_dial(a_chan.uniqueid, redirector, a_chan.exten, targets)
+                    self.on_b_dial(a_chan.uniqueid, redirector, a_chan.exten, targets,
+                                   self._get_direction(redirector_chan, channel))
                 else:
                     # This transfer was initiated on the B side, which means
                     # we're going to be left with A -> C afterwards. A dial
                     # event with A was already generated, so we could (ab)use
                     # any old channel here to simulate a merged call.
                     # So why specifically use redirector_chan? Just read on...
-                    self.on_b_dial(redirector_chan.uniqueid, redirector, redirector_chan.exten, targets)
+                    self.on_b_dial(redirector_chan.uniqueid, redirector, redirector_chan.exten, targets,
+                                   self._get_direction(redirector_chan, channel))
 
                 # Now it's time to send a transfer event. dialing_channel is
                 # always the channel we're going to be left with (regardless
@@ -966,16 +969,19 @@ class ChannelManager(object):
             else:
                 # We'll want to send one ringing event for all targets. So
                 # let's figure out to whom a_chan has open dials. To ensure
-                # only one event is raised, we'll check all the uniqueids and
-                # only send an event for the channel with the lowest uniqueid.
-                # if not a_chan.is_up:
+                # only one event is raised, we only send an event for the
+                # channel whose state is changing now, and mark the rest as
+                # already notified.
                 open_dials = a_chan.get_dialed_channels()
                 targets = [dial.callerid for dial in open_dials]
 
                 for b_chan in open_dials:
                     if b_chan == channel:
                         # Ensure a notification is only sent once.
-                        self.on_b_dial(a_chan.uniqueid, a_chan.callerid, a_chan.exten, targets)
+                        self.on_b_dial(
+                            a_chan.uniqueid, a_chan.callerid, a_chan.exten, targets,
+                            self._get_direction(a_chan, b_chan)
+                        )
                     else:
                         # To prevent notifications from being sent multiple times,
                         # we set a flag on all other channels except for the one
@@ -1060,10 +1066,7 @@ class ChannelManager(object):
             target (Channel): The target channel.
             transfer_exten (str): The phone number being transferred to.
         """
-        if channel.is_called_chan:
-            target.custom['raw_blind_transfer'] = channel
-        else:
-            target.custom['raw_blind_transfer'] = channel
+        target.custom['raw_blind_transfer'] = channel
 
         # Mark the original channel as ignored, so we don't report a hangup
         # just after the transfer.
@@ -1102,7 +1105,10 @@ class ChannelManager(object):
             b_chans = channel.get_dialed_channels()
             for b_chan in b_chans:
                 if b_chan.is_up:
-                    self.on_up(a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid)
+                    self.on_up(
+                        a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid,
+                        self._get_direction(a_chan, b_chan)
+                    )
 
     def _raw_b_up(self, channel):
         """
@@ -1117,7 +1123,10 @@ class ChannelManager(object):
             a_chan = channel.get_dialing_channel()
             b_chan = channel
             if a_chan.is_up:
-                self.on_up(a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid)
+                self.on_up(
+                    a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid,
+                    self._get_direction(a_chan, b_chan)
+                )
 
     def _raw_hangup(self, channel, event):
         """
@@ -1130,11 +1139,12 @@ class ChannelManager(object):
         if channel.is_relevant:
             if 'raw_blind_transfer' in channel.custom:
                 # Panic! This channel had a blind transfer coming up but it's
-                # being hung up! That probably means the blind transfer target
-                # could not be reached.
+                # being hanged up! That probably means the blind transfer
+                # target could not be reached.
                 # Ideally, we would simulate a full blind transfer having been
                 # completed but hanged up with an error. However, no channel
-                # to the third party has been created.
+                # to the third party has been created, so we can't retrieve
+                # the details of the C party.
                 redirector = channel.custom.pop('raw_blind_transfer')
 
                 if redirector.is_calling_chan:
@@ -1145,7 +1155,8 @@ class ChannelManager(object):
                     b_chan = redirector
 
                 # TODO: Maybe give another status code than 'completed' here?
-                self.on_a_hangup(a_chan.uniqueid, a_chan.callerid, b_chan.callerid.number, 'completed')
+                self.on_a_hangup(a_chan.uniqueid, a_chan.callerid, b_chan.callerid.number, 'completed',
+                                 self._get_direction(a_chan, b_chan))
 
             elif 'ignore_a_hangup' in channel.custom:
                 # This is a calling channel which performed an attended
@@ -1188,7 +1199,24 @@ class ChannelManager(object):
                 else:
                     reason = 'failed'
 
-                self.on_a_hangup(channel.uniqueid, channel.callerid, channel.exten, reason)
+                if 'voipgrid-siproute' in channel.name:
+                    direction = 'inbound'
+                elif 'b_chan_direction' in channel.custom:
+                    direction = channel.custom.pop('b_chan_direction')
+                elif channel.get_dialed_channels():
+                    dialed_channels = channel.get_dialed_channels()
+                    direction = self._get_direction(channel, list(dialed_channels)[0])
+                else:
+                    direction = 'unknown'
+
+                self.on_a_hangup(channel.uniqueid, channel.callerid, channel.exten, reason, direction)
+            elif channel.is_called_chan and channel.get_dialing_channel() != channel:
+                # We have a relevant B channel which still has open dials and
+                # is being hanged up. Since A is hanged up later, this is our
+                # last chance to check the call direction, which we can store
+                # with A.
+                a_chan = channel.get_dialing_channel()
+                a_chan.custom['b_chan_direction'] = self._get_direction(a_chan, channel)
 
         # We've sent all relevant notifications regarding the channel
         # being gone, so we can forget it ourselves now as well.
@@ -1203,11 +1231,29 @@ class ChannelManager(object):
         if not len(self._registry):
             self._reporter.trace_msg('(no channels left)')
 
+    def _get_direction(self, a_chan, b_chan):
+        """
+        Determine whether the call is inbound, outbound or internal.
+
+        Args:
+            a_chan (Channel): The calling channel.
+            b_chan (Channel): The called channel.
+
+        Returns:
+            str
+        """
+        if 'voipgrid-siproute' in a_chan.name:
+            return 'inbound'
+        elif 'voipgrid-siproute' in b_chan.name:
+            return 'outbound'
+        else:
+            return 'internal'
+
     # ===================================================================
     # Actual event handlers you should override
     # ===================================================================
 
-    def on_b_dial(self, call_id, caller, to_number, targets):
+    def on_b_dial(self, call_id, caller, to_number, targets, direction):
         """
         Gets invoked when the B side of a call is initiated.
 
@@ -1220,9 +1266,13 @@ class ChannelManager(object):
             caller (CallerId): The initiator of the call.
             to_number (str): The number which was dialed by the user.
             targets (list): A list of recipients of the call.
+            direction (str): The direction of the call. Can be inbound,
+                outbound or internal.
         """
-        self._reporter.trace_msg('{} ringing: {} --> {} ({})'.format(call_id, caller, to_number, targets))
-        self._reporter.on_b_dial(call_id, caller, to_number, targets)
+        self._reporter.trace_msg('{} {} ringing: {} --> {} ({})'.format(
+            call_id, direction, caller, to_number,  targets)
+        )
+        self._reporter.on_b_dial(call_id, caller, to_number, targets, direction)
 
     def on_warm_transfer(self, call_id, merged_id, redirector, caller, destination):
         """
@@ -1295,7 +1345,7 @@ class ChannelManager(object):
         self._reporter.trace_msg('user_event: {}'.format(event))
         self._reporter.on_user_event(event)
 
-    def on_up(self, call_id, caller, to_number, callee):
+    def on_up(self, call_id, caller, to_number, callee, direction):
         """Gets invoked when a call is connected.
 
         When two sides have connected and engaged in a conversation, an "up"
@@ -1308,11 +1358,13 @@ class ChannelManager(object):
             caller (CallerId): The initiator of the call.
             to_number (str): The number which was dialed by the user.
             callee (CallerId): The recipient of the call.
+            direction (str): The direction of the call. Can be inbound,
+                outbound or internal.
         """
-        self._reporter.trace_msg('{} up: {} --> {} ({})'.format(call_id, caller, to_number, callee))
-        self._reporter.on_up(call_id, caller, to_number, callee)
+        self._reporter.trace_msg('{} {} up: {} --> {} ({})'.format(call_id, direction, caller, to_number, callee))
+        self._reporter.on_up(call_id, caller, to_number, callee, direction)
 
-    def on_a_hangup(self, call_id, caller, to_number, reason):
+    def on_a_hangup(self, call_id, caller, to_number, reason, direction):
         """Gets invoked when a call is completed.
 
         There are two types of events which should be monitored to determine
@@ -1327,11 +1379,13 @@ class ChannelManager(object):
             to_number (str): The number which was dialed by the user.
             reason (str): Why the call ended (completed, no-answer, busy,
                 failed, answered-elsewhere).
+            direction (str): The direction of the call. Can be inbound,
+                outbound or internal.
         """
         self._reporter.trace_msg(
-            '{} hangup: {} --> {} (reason: {})'.format(call_id, caller, to_number, reason)
+            '{} {} hangup: {} --> {} (reason: {})'.format(call_id, direction, caller, to_number, reason)
         )
-        self._reporter.on_hangup(call_id, caller, to_number, reason)
+        self._reporter.on_hangup(call_id, caller, to_number, reason, direction)
 
 
 class DebugChannelManager(ChannelManager):

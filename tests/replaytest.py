@@ -16,11 +16,12 @@ class TestReporter(BaseReporter):
         super(TestReporter, self).__init__()
         self.events = []
 
-    def on_b_dial(self, call_id, caller, to_number, targets):
+    def on_b_dial(self, call_id, caller, to_number, targets, direction):
         targets.sort(key=lambda callee: '%s%s' % (callee.code, callee.number))
 
         self.events.append({
             'event': 'on_b_dial',
+            'direction': direction,
             'call_id': call_id,
             'caller': caller,
             'to_number': to_number,
@@ -50,18 +51,20 @@ class TestReporter(BaseReporter):
             'to_number': to_number,
         })
 
-    def on_up(self, call_id, caller, to_number, callee):
+    def on_up(self, call_id, caller, to_number, callee, direction):
         self.events.append({
             'event': 'on_up',
+            'direction': direction,
             'caller': caller,
             'to_number': to_number,
             'callee': callee,
             'call_id': call_id,
         })
 
-    def on_hangup(self, call_id, caller, to_number, reason):
+    def on_hangup(self, call_id, caller, to_number, reason, direction):
         self.events.append({
             'event': 'on_hangup',
+            'direction': direction,
             'caller': caller,
             'to_number': to_number,
             'reason': reason,

@@ -51,8 +51,8 @@ class BaseReporter(object):
                 transfer.
             caller (CallerId): The caller ID of the party which has been
                 transferred.
-            destination (CallerId): The caller ID of the party which received the
-                transfer.
+            destination (CallerId): The caller ID of the party which received
+                the transfer.
         """
         pass
 
@@ -87,7 +87,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_b_dial(self, call_id, caller, to_number, targets):
+    def on_b_dial(self, call_id, caller, to_number, targets, direction):
         """
         Gets invoked when the B side of a call is initiated.
 
@@ -100,6 +100,8 @@ class BaseReporter(object):
             caller (CallerId): The initiator of the call.
             to_number (str): The number being dialed by the caller.
             targets (list): The recipients of the call.
+            direction (str): The direction of the call. Can be inbound,
+                outbound or internal.
         """
         pass
 
@@ -115,7 +117,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_up(self, call_id, caller, to_number, callee):
+    def on_up(self, call_id, caller, to_number, callee, direction):
         """Track when a call has been set up between two parties.
 
         In simple calls, a "up" event is raised when a call has been ringing
@@ -127,10 +129,12 @@ class BaseReporter(object):
             caller (CallerId): The initiator of the call.
             to_number (str): The number being dialed by the caller.
             callee (CallerId): The recipient of the call.
+            direction (str): The direction of the call. Can be inbound,
+                outbound or internal.
         """
         pass
 
-    def on_hangup(self, call_id, caller, to_number, reason):
+    def on_hangup(self, call_id, caller, to_number, reason, direction):
         """
         Track when a call ends for a caller.
 
@@ -139,5 +143,7 @@ class BaseReporter(object):
             caller (CallerId): The initiator of the call.
             to_number (str): The number being dialed by the caller.
             reason (str): A textual reason as to why the call was ended.
+            direction (str): The direction of the call. Can be inbound,
+                outbound or internal.
         """
         pass

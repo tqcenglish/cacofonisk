@@ -14,18 +14,21 @@ class TestSimpleOrig(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1501851189.231',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'to_number': '203',
                 'targets': [CallerId(code=150010003, number='203', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '63f2f9ce924a-1501851189.231',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'to_number': '203',
                 'callee': CallerId(code=150010003, number='203', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': '63f2f9ce924a-1501851189.231',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'to_number': '203',
                 'reason': 'completed',
@@ -42,12 +45,14 @@ class TestSimpleOrig(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1501851519.239',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'to_number': '201',
                 'targets': [CallerId(code=150010001, number='201', is_public=True)],
             }),
             ('on_hangup', {
                 'call_id': '63f2f9ce924a-1501851519.239',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'to_number': '201',
                 'reason': 'busy'
@@ -68,18 +73,21 @@ class TestSimpleOrig(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': '2087873f7e47-1508940720.14',
+                'direction': 'inbound',
                 'caller': CallerId(code=15001, number='+31260010001', is_public=True),
                 'to_number': '+31150010001',
                 'targets': [CallerId(code=150010001, number='+31150010001', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '2087873f7e47-1508940720.14',
+                'direction': 'inbound',
                 'caller': CallerId(code=15001, number='+31260010001', is_public=True),
                 'to_number': '+31150010001',
                 'callee': CallerId(code=150010001, number='+31150010001', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': '2087873f7e47-1508940720.14',
+                'direction': 'inbound',
                 'caller': CallerId(code=15001, number='+31260010001', is_public=True),
                 'to_number': '+31150010001',
                 'reason': 'completed',
@@ -97,6 +105,7 @@ class TestSimpleOrig(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': '63f2f9ce924a-1501852169.254',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'to_number': '401',
                 'targets': [
@@ -106,12 +115,14 @@ class TestSimpleOrig(ChannelEventsTestCase):
             }),
             ('on_up', {
                 'call_id': '63f2f9ce924a-1501852169.254',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'to_number': '401',
                 'callee': CallerId(code=150010001, number='401', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': '63f2f9ce924a-1501852169.254',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='Robert Murray', number='202', is_public=True),
                 'to_number': '401',
                 'reason': 'completed'
@@ -129,6 +140,7 @@ class TestSimpleOrig(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': '0f00dcaa884f-1509355567.22',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
                 'to_number': '403',
                 'targets': [
@@ -138,6 +150,7 @@ class TestSimpleOrig(ChannelEventsTestCase):
             }),
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1509355567.22',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
                 'to_number': '403',
                 'reason': 'no-answer',
@@ -155,12 +168,14 @@ class TestSimpleOrig(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': '0f00dcaa884f-1508490698.34',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
                 'to_number': '204',
                 'targets': [CallerId(code=150010004, number='204', is_public=True)],
             }),
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1508490698.34',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
                 'to_number': '204',
                 'reason': 'cancelled'
@@ -178,18 +193,21 @@ class TestSimpleOrig(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': '0f00dcaa884f-1508490669.30',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
                 'to_number': '204',
                 'targets': [CallerId(code=150010004, number='204', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '0f00dcaa884f-1508490669.30',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
                 'to_number': '204',
                 'callee': CallerId(code=150010004, number='204', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': '0f00dcaa884f-1508490669.30',
+                'direction': 'internal',
                 'caller': CallerId(code=150010002, name='David Meadows', number='202', is_public=True),
                 'to_number': '204',
                 'reason': 'completed',

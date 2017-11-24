@@ -13,18 +13,21 @@ class TestFixed(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': '2087873f7e47-1509101015.24',
+                'direction': 'inbound',
                 'caller': CallerId(code=15001, number='+31853030900', is_public=True),
                 'to_number': '+31853030904',
                 'targets': [CallerId(code=150010003, number='+31853030904', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '2087873f7e47-1509101015.24',
+                'direction': 'inbound',
                 'caller': CallerId(code=15001, number='+31853030900', is_public=True),
                 'to_number': '+31853030904',
                 'callee': CallerId(code=150010003, number='+31853030904', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': '2087873f7e47-1509101015.24',
+                'direction': 'inbound',
                 'caller': CallerId(code=15001, number='+31853030900', is_public=True),
                 'to_number': '+31853030904',
                 'reason': 'completed',
@@ -43,18 +46,21 @@ class TestFixed(ChannelEventsTestCase):
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
                 'call_id': '2087873f7e47-1509103867.32',
+                'direction': 'inbound',
                 'caller': CallerId(code=15001, number='+31853030900', is_public=True),
                 'to_number': '+31853030904',
                 'targets': [CallerId(code=0, number='+31613925xxx', is_public=True)],
             }),
             ('on_up', {
                 'call_id': '2087873f7e47-1509103867.32',
+                'direction': 'inbound',
                 'caller': CallerId(code=15001, number='+31853030900', is_public=True),
                 'to_number': '+31853030904',
                 'callee': CallerId(code=0, number='+31613925xxx', is_public=True),
             }),
             ('on_hangup', {
                 'call_id': '2087873f7e47-1509103867.32',
+                'direction': 'inbound',
                 'caller': CallerId(code=15001, number='+31853030900', is_public=True),
                 'to_number': '+31853030904',
                 'reason': 'completed',
