@@ -68,3 +68,35 @@ class TestFixed(ChannelEventsTestCase):
         ))
 
         self.assertEqual(events, expected_events)
+
+    def test_fixed_internal(self):
+        """
+        Test an internal call to a user with a selected fixed destination.
+        """
+        events = self.run_and_get_events('fixtures/fixed/fixed_internal.json')
+
+        expected_events = self.events_from_tuples((
+            ('on_b_dial', {
+                'call_id': 'ua0-acc-1511772045.174',
+                'direction': 'internal',
+                'caller': CallerId(code=126680010, name='Cisco SPA', number='218', is_public=True),
+                'to_number': '603',
+                'targets': [CallerId(number='+31612345678', is_public=True)],
+            }),
+            ('on_up', {
+                'call_id': 'ua0-acc-1511772045.174',
+                'direction': 'internal',
+                'caller': CallerId(code=126680010, name='Cisco SPA', number='218', is_public=True),
+                'to_number': '603',
+                'callee': CallerId(number='+31612345678', is_public=True),
+            }),
+            ('on_hangup', {
+                'call_id': 'ua0-acc-1511772045.174',
+                'direction': 'internal',
+                'caller': CallerId(code=126680010, name='Cisco SPA', number='218', is_public=True),
+                'to_number': '603',
+                'reason': 'completed',
+            }),
+        ))
+
+        self.assertEqual(expected_events, events)

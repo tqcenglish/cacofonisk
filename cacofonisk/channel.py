@@ -245,6 +245,7 @@ class Channel(object):
         if self._direction == 'unknown':
             a_chan = b_chan = None
 
+            # Determine ultimate source and destination chans of this call.
             if self.is_called_chan:
                 a_chan = self.get_dialing_channel()
                 b_chan = self
@@ -254,7 +255,13 @@ class Channel(object):
                 if b_chans:
                     b_chan = next(iter(b_chans))
 
+            # Check if we were able to find both ultimate endpoints.
             if a_chan and b_chan:
+                # voipgrid-siproute is the sipfriend used to connect to the
+                # rest of the world beyond this client. If the caller is from
+                # outside, then it's an inbound call. If the destination is
+                # to the outside, it's an outbound call. If neither ends are
+                # from the outside, the call must be internal.
                 if 'voipgrid-siproute' in a_chan.name:
                     self._direction = 'inbound'
                 elif 'voipgrid-siproute' in b_chan.name:
