@@ -97,6 +97,7 @@ class Channel(object):
         self.fwd_dials = []
 
         self._state = int(event['ChannelState'])  # 0, Down
+        self._connected_line = CallerId()
         self._bridged = set()
         self._exten = event['Exten']
 
@@ -214,6 +215,10 @@ class Channel(object):
         return self._exten
 
     @property
+    def connected_line(self):
+        return self._connected_line
+
+    @property
     def is_calling_chan(self):
         """
         Check whether this channel is a calling other channels.
@@ -278,6 +283,12 @@ class Channel(object):
         self._state = int(event['ChannelState'])  # 4=Ring, 6=Up
         assert old_state != self._state
         self._trace('set_state {} -> {}'.format(old_state, self._state))
+
+        if 'ConnectedLineNum' in event and event['ConnectedLineNum']:
+            self._connected_line = CallerId(
+                number=event['ConnectedLineNum'],
+                name=event.get('ConnectedLineName', '')
+            )
 
         if old_state == AST_STATE_DOWN and self._state in (AST_STATE_DIALING, AST_STATE_RING, AST_STATE_UP):
             self._channel_manager._raw_a_dial(self)
@@ -819,6 +830,9 @@ class ChannelManager(object):
 
                 # _back_dial is the channel dialing B.
                 target.back_dial = source
+
+                if source.is_relevant and not target.is_relevant:
+                    source._connected_line = target.callerid
             elif event['SubEvent'] == 'End':
                 # This is cleaned up after Hangup.
                 pass
@@ -863,6 +877,9 @@ class ChannelManager(object):
 
             source.fwd_dials.append(target)
             target.back_dial = source
+
+            if source.is_relevant and not target.is_relevant:
+                source._connected_line = target.callerid
 
         elif event_name == 'UserEvent':
             self.on_user_event(event)
@@ -975,7 +992,7 @@ class ChannelManager(object):
                 for b_chan in open_dials:
                     if b_chan == channel:
                         # Ensure a notification is only sent once.
-                        self.on_b_dial(a_chan.uniqueid, a_chan.callerid, a_chan.exten, targets)
+                        self.on_b_dial(a_chan.uniqueid, a_chan.callerid, a_chan.connected_line.number, targets)
                     else:
                         # To prevent notifications from being sent multiple times,
                         # we set a flag on all other channels except for the one
@@ -1045,7 +1062,7 @@ class ChannelManager(object):
 
             targets = [c_chan.callerid for c_chan in target.get_dialed_channels()]
             self.on_cold_transfer(target.uniqueid, old_a_chan.uniqueid,
-                                  target.callerid, new_caller.callerid, target.exten, targets)
+                                  target.callerid, new_caller.callerid, target.connected_line.number, targets)
 
     def _raw_blind_transfer(self, channel, target, transfer_exten):
         """
@@ -1102,7 +1119,7 @@ class ChannelManager(object):
             b_chans = channel.get_dialed_channels()
             for b_chan in b_chans:
                 if b_chan.is_up:
-                    self.on_up(a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid)
+                    self.on_up(a_chan.uniqueid, a_chan.callerid, a_chan.connected_line.number, b_chan.callerid)
 
     def _raw_b_up(self, channel):
         """
@@ -1117,7 +1134,7 @@ class ChannelManager(object):
             a_chan = channel.get_dialing_channel()
             b_chan = channel
             if a_chan.is_up:
-                self.on_up(a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid)
+                self.on_up(a_chan.uniqueid, a_chan.callerid, a_chan.connected_line.number, b_chan.callerid)
 
     def _raw_hangup(self, channel, event):
         """
@@ -1188,7 +1205,7 @@ class ChannelManager(object):
                 else:
                     reason = 'failed'
 
-                self.on_a_hangup(channel.uniqueid, channel.callerid, channel.exten, reason)
+                self.on_a_hangup(channel.uniqueid, channel.callerid, channel.connected_line.number, reason)
 
         # We've sent all relevant notifications regarding the channel
         # being gone, so we can forget it ourselves now as well.
@@ -1277,9 +1294,9 @@ class ChannelManager(object):
             targets (list): A list of CallerId objects whose phones are
                 ringing for this transfer.
         """
-        self._reporter.trace_msg(
-            '{} <== {} bld xfer: {} <--> {} (through {})'.format(call_id, merged_id, caller, targets, redirector),
-        )
+        self._reporter.trace_msg('{} <== {} bld xfer: {} <--> {} {} (through {})'.format(
+            call_id, merged_id, caller, to_number, targets, redirector
+        ))
         self._reporter.on_cold_transfer(call_id, merged_id, redirector, caller, to_number, targets)
 
     def on_user_event(self, event):
