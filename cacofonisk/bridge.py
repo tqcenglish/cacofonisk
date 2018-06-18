@@ -5,7 +5,7 @@ class Bridge(object):
 
         Args:
             event (Event):
-            channel_manager (ChannelManager):
+            channel_manager (EventHandler):
         """
         self._channel_manager = channel_manager
 
@@ -16,7 +16,11 @@ class Bridge(object):
         channel = self._channel_manager._registry.get_by_uniqueid(event['Uniqueid'])
         self._peers.add(channel)
 
-        assert len(self) == int(event['BridgeNumChannels'])
+        assert len(self) == int(event['BridgeNumChannels']), (
+            'BridgeNumChannels after enter does not match internal count, '
+            'Asterisk has {} but we have {}.'.format(
+                int(event['BridgeNumChannels']), len(self))
+        )
 
     def leave(self, event):
         channel = self._channel_manager._registry.get_by_uniqueid(event['Uniqueid'])
@@ -25,7 +29,11 @@ class Bridge(object):
 
         self._peers.remove(channel)
 
-        assert len(self) == int(event['BridgeNumChannels'])
+        assert len(self) == int(event['BridgeNumChannels']), (
+            'BridgeNumChannels after leave does not match internal count, '
+            'Asterisk has {} but we have {}.'.format(
+                int(event['BridgeNumChannels']), len(self))
+        )
 
     @property
     def peers(self):

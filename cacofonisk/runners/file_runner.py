@@ -1,6 +1,6 @@
 """
-Implement a Runner which reads files, instatiates a ChannelManager and calls
-the ChannelManager accordingly.
+Implement a Runner which reads files, instatiates a EventHandler and calls
+the EventHandler accordingly.
 
 If the main application desires to replay previously stored events (an
 event replay log), the FileRunner is the runner to use.
@@ -10,11 +10,11 @@ dictionaries.
 """
 from json import load
 
-from ..channel import ChannelManager
+from ..handlers import EventHandler
 
 
 class FileRunner(object):
-    def __init__(self, files, reporter, channel_manager_class=ChannelManager):
+    def __init__(self, files, reporter, channel_manager_class=EventHandler):
         """
         FileRunner is a Runner that reads from one or more files.
 
@@ -22,7 +22,7 @@ class FileRunner(object):
             files [str]: A list of strings containing filenames or, a string
                         containing a filename.
             reporter (Reporter): The reporter to use for this Runner.
-            channel_manager_class: The ChannelManager to instantiate for this
+            channel_manager_class: The EventHandler to instantiate for this
                 Runner.
         """
         if type(files) == str:

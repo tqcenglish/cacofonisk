@@ -5,15 +5,15 @@ import sys
 
 from panoramisk import Manager
 
-from ..channel import ChannelManager
+from ..handlers import EventHandler
 
 
 class AmiRunner(object):
     """
     A Runner which reads Asterisk AMI events and passes them to a
-    ChannelManager instance.
+    EventHandler instance.
     """
-    def __init__(self, amihosts, reporter, channel_manager=ChannelManager, logger=None):
+    def __init__(self, amihosts, reporter, channel_manager=EventHandler, logger=None):
         """
         Args:
             amihosts [dict]: A list of dictionaries.
@@ -38,7 +38,7 @@ class AmiRunner(object):
 
     def attach(self, amihost):
         """
-        attach amihost to a ChannelManager.
+        attach amihost to a EventHandler.
 
         Args:
             amihost (dict): A dictionary containing the connection settings for

@@ -137,7 +137,7 @@ class TestBlondeXferOrig(ChannelEventsTestCase):
             # Blonde xfer consists of a nice secondary dial, like the
             # attended transfer. But the bridge isn't up on the target
             # channel, so the last CLI takes more work to get right.
-            # Luckily that is tucked away in the ChannelManager class.
+            # Luckily that is tucked away in the EventHandler class.
             ('on_b_dial', {
                 'call_id': 'vgua0-dev-1443448784.120',
                 'caller': CallerId(code=126680005, name='No NAT', number='205', is_public=True),

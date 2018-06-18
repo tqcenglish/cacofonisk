@@ -1,7 +1,7 @@
 class BaseReporter(object):
     """
     BaseReporter is a skeleton baseclass for any Reporter classes. The methods
-    can be overwritten. See class:`ChannelManager` to see where these methods
+    can be overwritten. See class:`EventHandler` to see where these methods
     are called.
     """
     def trace_ami(self, event):
