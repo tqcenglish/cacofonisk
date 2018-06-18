@@ -27,7 +27,7 @@ class JsonReporter(BaseReporter):
             self._trace_ami_count = 0
         comma = ',' if self._trace_ami_count else ''
         self._trace_ami_fp.write('{}\n  {}'.format(
-            comma, json.dumps(dict(event))))
+            comma, json.dumps(dict(event), sort_keys=True)))
         self._trace_ami_count += 1
         sys.stderr.write('{} written\r'.format(self._trace_ami_count))
 

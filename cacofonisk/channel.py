@@ -19,11 +19,21 @@ of these four events::
 You should override these ChannelManager methods in your
 subclass and add the desired behaviour for those events.
 """
-from cacofonisk.constants import (AST_CAUSE_ANSWERED_ELSEWHERE, AST_CAUSE_CALL_REJECTED, AST_CAUSE_NORMAL_CLEARING,
-                                  AST_CAUSE_NO_ANSWER, AST_CAUSE_NO_USER_RESPONSE, AST_CAUSE_UNKNOWN,
-                                  AST_CAUSE_USER_BUSY, AST_STATE_DIALING, AST_STATE_DOWN, AST_STATE_RING,
-                                  AST_STATE_RINGING, AST_STATE_UP)
+from .bridge import BridgeRegistry
 from .callerid import CallerId
+from .constants import (
+    AST_CAUSE_ANSWERED_ELSEWHERE,
+    AST_CAUSE_CALL_REJECTED,
+    AST_CAUSE_NORMAL_CLEARING,
+    AST_CAUSE_NO_ANSWER,
+    AST_CAUSE_NO_USER_RESPONSE,
+    AST_CAUSE_UNKNOWN,
+    AST_CAUSE_USER_BUSY,
+    AST_STATE_DIALING,
+    AST_STATE_DOWN,
+    AST_STATE_RING,
+    AST_STATE_RINGING,
+    AST_STATE_UP)
 
 
 class MissingChannel(KeyError):
@@ -31,10 +41,6 @@ class MissingChannel(KeyError):
 
 
 class MissingUniqueid(KeyError):
-    pass
-
-
-class BridgedError(Exception):
     pass
 
 
@@ -68,45 +74,56 @@ class Channel(object):
 
             channel = Channel(
                 event={
-                    'AccountCode': '',
-                    'CallerIDName': 'Foo bar',
-                    'CallerIDNum': '+31501234567',
-                    'Channel='SIP/voipgrid-siproute-dev-0000000c',
-                    'ChannelState': '0',
-                    'ChannelStateDesc': 'Down',
-                    'Context': 'voipgrid_in',
-                    'Event': 'Newchannel',
-                    'Exten': '+31501234567',
-                    'Privilege: 'call,all',
-                    'Uniqueid': 'vgua0-dev-1442239323.24',
-                    'content: '',
+                    "AccountCode": "126680001",
+                    "CallerIDName": "<unknown>",
+                    "CallerIDNum": "126680001",
+                    "Channel": "SIP/126680001-0000000a",
+                    "ChannelState": "0",
+                    "ChannelStateDesc": "Down",
+                    "ConnectedLineName": "<unknown>",
+                    "ConnectedLineNum": "<unknown>",
+                    "Context": "osvpi_account",
+                    "Event": "Newchannel",
+                    "Exten": "202",
+                    "Language": "en",
+                    "Linkedid": "07764b6803cf-1528985135.175",
+                    "Priority": "1",
+                    "Privilege": "call,all",
+                    "SystemName": "07764b6803cf",
+                    "Uniqueid": "07764b6803cf-1528985135.175",
+                    "content": ""
                 },
                 channel_manager=channel_manager)
         """
         self._channel_manager = channel_manager
 
-        # Uses of this instance may put data in the custom dict. We take
-        # care to link this on masquerade.
+        # Uses of this instance may put data in the custom dict.
         self.custom = {}
 
         self._name = event['Channel']
         self._id = event['Uniqueid']
+        self._linkedid = event['Linkedid']
         self._fwd_local_bridge = None
         self._back_local_bridge = None
         self.back_dial = None
         self.fwd_dials = []
+        self._bridge = None
 
         self._state = int(event['ChannelState'])  # 0, Down
-        self._bridged = set()
         self._exten = event['Exten']
 
         self._side = None
+        self._is_picked_up = False
 
         self._callerid = CallerId(
             code=int(event['AccountCode'] or 0),
             name=event['CallerIDName'],
             number=event['CallerIDNum'],
-            is_public=True
+        )
+
+        self._connected_line = CallerId(
+            name=event['ConnectedLineName'],
+            number=event['ConnectedLineNum']
         )
 
         self._trace('new {!r}'.format(self))
@@ -116,10 +133,11 @@ class Channel(object):
             '<Channel('
             'name={self._name!r} '
             'id={self._id!r} '
+            'linkedid={self._linkedid!r} '
             'forward_local_bridge={next} '
             'backward_local_bridge={prev} '
             'state={self._state} '
-            'cli={self.callerid} '
+            'cli={self.callerid!r} '
             'exten={self._exten!r})>').format(
             self=self,
             next=(self._fwd_local_bridge and self._fwd_local_bridge.name),
@@ -130,26 +148,6 @@ class Channel(object):
         _trace can be used to follow interesting events.
         """
         pass
-
-    @property
-    def is_relevant(self):
-        """
-        is_relevant returns true if the channel is not a Zombie channel.
-
-        Returns:
-            bool: True if self is a SIP channel and not a zombie channel.
-        """
-        return self.is_sip and not self.is_zombie
-
-    @property
-    def is_zombie(self):
-        """
-        Whether the current channel is ZOMBIE channel.
-
-        Returns:
-            bool: True if the channel is a zombie, false otherwise.
-        """
-        return self.name.endswith('<ZOMBIE>')
 
     @property
     def is_connectab(self):
@@ -206,27 +204,16 @@ class Channel(object):
         return self._id
 
     @property
+    def linkedid(self):
+        return self._linkedid
+
+    @property
     def name(self):
         return self._name
 
     @property
     def callerid(self):
         return self._callerid
-
-    @property
-    def is_bridged(self):
-        return bool(self._bridged)
-
-    @property
-    def bridged_channel(self):
-        tmp = list(self._bridged)
-        if len(tmp) != 1:
-            raise BridgedError(
-                'Expected one bridged channel. '
-                'Did Asterisk bridge multiple? '
-                'Or did you forget to call is_bridged? '
-                'Bridge set: {!r}'.format(self._bridged))
-        return tmp[0]
 
     @property
     def is_up(self):
@@ -315,16 +302,11 @@ class Channel(object):
         assert old_state != self._state
         self._trace('set_state {} -> {}'.format(old_state, self._state))
 
-        if old_state == AST_STATE_DOWN and self._state in (AST_STATE_DIALING, AST_STATE_RING, AST_STATE_UP):
-            self._channel_manager._raw_a_dial(self)
-        elif old_state == AST_STATE_DOWN and self._state == AST_STATE_RINGING:
-            self._channel_manager._raw_b_dial(self)
-        elif old_state == AST_STATE_RING and self._state == AST_STATE_UP:
-            self._channel_manager._raw_a_up(self)
-        elif old_state == AST_STATE_RINGING and self._state == AST_STATE_UP:
-            self._channel_manager._raw_b_up(self)
-        else:
-            self._trace('Unimplemented state update: {} -> {}'.format(old_state, self._state))
+        if self.is_sip:
+            if old_state == AST_STATE_DOWN and self._state in (AST_STATE_DIALING, AST_STATE_RING, AST_STATE_UP):
+                self._channel_manager._raw_a_dial(self)
+            elif old_state == AST_STATE_DOWN and self._state == AST_STATE_RINGING:
+                self._channel_manager._raw_b_dial(self)
 
     def set_callerid(self, event):
         """
@@ -356,9 +338,26 @@ class Channel(object):
         self._callerid = self._callerid.replace(
             name=event['CallerIDName'],
             number=caller_id_number,
-            is_public=('Allowed' in event['CID-CallingPres']))
+            is_public=('Allowed' in event['CID-CallingPres']),
+        )
 
         self._trace('set_callerid {} -> {}'.format(old_cli, self._callerid))
+
+    def set_connected_line(self, event):
+        """
+        Update the ConnectedLine information of this call.
+
+        Args:
+            event (Event): A NewConnectedLine event about this channel.
+        """
+        old_connected_line = self._connected_line
+
+        self._connected_line = self._connected_line.replace(
+            name=event['ConnectedLineName'],
+            number=event['ConnectedLineNum'],
+        )
+
+        self._trace('set_connected_line {} -> {}'.format(old_connected_line, self._connected_line))
 
     def set_accountcode(self, event):
         """
@@ -416,9 +415,6 @@ class Channel(object):
             self.back_dial.fwd_dials.remove(self)
             self.back_dial = None
 
-        # Assert that there are no bridged channels.
-        assert not self._bridged, self._bridged
-
     def do_localbridge(self, other):
         """
         do_localbridge sets `self` as attr:`_back_local_bridge` on `other`
@@ -446,76 +442,6 @@ class Channel(object):
         other._back_local_bridge = self
 
         self._trace('do_localbridge -> {!r}'.format(other))
-
-    def do_masquerade(self, other):
-        """
-        do_masquerade removes all links from `self` and moves the links from
-        `other` to `self`. The `custom` dict is also moved from `other` to
-        `self`.
-
-        Args:
-            other (Channel): An instance of class:`Channel`.
-        """
-        # If self is linked, we must undo all of that first.
-        if self._fwd_local_bridge:
-            self._trace('discarding old next link {}'.format(self._fwd_local_bridge.name))
-            self._fwd_local_bridge._back_local_bridge = None
-            self._fwd_local_bridge = None
-
-        if self._back_local_bridge:
-            self._trace('discarding old prev link {}'.format(self._back_local_bridge.name))
-            self._back_local_bridge._fwd_local_bridge = None
-            self._back_local_bridge = None
-
-        # If other is linked, move that to us.
-        if other._fwd_local_bridge:
-            other._fwd_local_bridge._back_local_bridge = self
-            self._fwd_local_bridge = other._fwd_local_bridge
-            other._fwd_local_bridge = None
-            self._trace('updated next link {}'.format(self._fwd_local_bridge.name))
-
-        if other._back_local_bridge:
-            other._back_local_bridge._fwd_local_bridge = self
-            self._back_local_bridge = other._back_local_bridge
-            other._back_local_bridge = None
-            self._trace('updated prev link {}'.format(self._back_local_bridge.name))
-
-        # What should we do with bridges? In the Asterisk source, it looks like
-        # we keep the bridges intact, i.e.: the original (self) channel gets
-        # properties copied from the clone (other), while we leave the bridging
-        # intact. That would mean that any bridges on the clone would be
-        # destroyed later on.
-
-        # There is one interesting feature going on here, later on, in
-        # certain cases, we a get a soon to be destroyed channel that we
-        # need to write info to. We link the info dict to the new class
-        # so we can write to the old one.
-        self.custom = other.custom
-        self._callerid = other.callerid
-
-        self._trace('do_masquerade -> {!r} {!r}'.format(self, other))
-
-    def do_link(self, other):
-        """
-        do_link adds `other` to the set of bridged channels in `self` and vice
-        versa.
-
-        Args:
-            other (Channel): An instance of class:`Channel`.
-        """
-        self._bridged.add(other)
-        other._bridged.add(self)
-
-    def do_unlink(self, other):
-        """
-        do_link removes `other` from the set of bridged channels in `self` and
-        vice versa.
-
-        Args:
-            other (Channel): An instance of class:`Channel`.
-        """
-        self._bridged.remove(other)
-        other._bridged.remove(self)
 
     def get_dialing_channel(self):
         """
@@ -583,6 +509,27 @@ class Channel(object):
                 b_channels.add(b_chan)
 
         return b_channels
+
+    def sync_data(self, event):
+        if 'Linkedid' in event:
+            self._linkedid = event['Linkedid']
+
+        if 'CallerIDNum' in event:
+            self._callerid = self._callerid.replace(
+                name=event['CallerIDName'],
+                number=event['CallerIDNum'],
+            )
+
+        if 'CID-CallingPres' in event:
+            self._callerid = self._callerid.replace(
+                is_public=('Allowed' in event['CID-CallingPres']),
+            )
+
+        if 'ConnectedLineNum' in event:
+            self._connected_line = self._connected_line.replace(
+                name=event['ConnectedLineName'],
+                number=event['ConnectedLineNum'],
+            )
 
 
 class ChannelRegistry(object):
@@ -731,15 +678,14 @@ class ChannelManager(object):
         # flush our channels at this point, because they aren't up
         # to date.
         'FullyBooted',
-        # These events all relate to low level channel setup and
-        # maintenance.
-        'Newchannel', 'Newstate', 'NewCallerid',
-        'NewAccountCode', 'LocalBridge', 'Rename',
-        'Bridge', 'Masquerade',
-        # Higher level channel info.
-        'Dial', 'Hangup', 'Transfer',
-        # Events related to tracking calls through queues.
-        'AgentCalled',
+        # Event related to channel setup.
+        'Newchannel', 'Newstate', 'NewCallerid', 'NewAccountCode', 'NewConnectedLine',
+        # Events used when setting up a call.
+        'DialBegin', 'DialEnd', 'LocalBridge', 'Hangup',
+        # Events about bridges and their contents.
+        'BridgeCreate', 'BridgeEnter', 'BridgeLeave', 'BridgeDestroy',
+        # Events about transfers.
+        'BlindTransfer', 'AttendedTransfer',
         # UserEvents
         'UserEvent'
     )
@@ -754,10 +700,11 @@ class ChannelManager(object):
         """
         self._reporter = reporter
         self._registry = ChannelRegistry()
+        self._bridge_registry = BridgeRegistry(self)
 
     def on_event(self, event):
         """
-        on_event calls `_on_event` with `event`. If `_on_event` raisen an
+        on_event calls `_on_event` with `event`. If `_on_event` raise an
         exception this is logged.
 
         Args:
@@ -777,8 +724,6 @@ class ChannelManager(object):
             self._reporter.trace_msg(
                 'Channel with Uniqueid {} not in mem when processing event: '
                 '{!r}'.format(e.args[0], event))
-        except BridgedError as e:
-            self._reporter.trace_msg(e)
 
         self._reporter.on_event(event)
 
@@ -795,6 +740,16 @@ class ChannelManager(object):
 
         event_name = event['Event']
 
+        if 'Uniqueid' in event:
+            try:
+                channel = self._registry.get_by_uniqueid(event['Uniqueid'])
+            except MissingUniqueid:
+                # It's OK if we don't know this channel, it might be a
+                # Newchannel event.
+                pass
+            else:
+                channel.sync_data(event)
+
         if event_name == 'FullyBooted':
             # Time to clear our channels because they are stale?
             self._reporter.trace_msg('Connected to Asterisk')
@@ -810,109 +765,86 @@ class ChannelManager(object):
         elif event_name == 'NewAccountCode':
             channel = self._registry.get_by_name(event['Channel'])
             channel.set_accountcode(event)
-        elif event_name == 'LocalBridge':
-            channel = self._registry.get_by_name(event['Channel1'])
-            other = self._registry.get_by_name(event['Channel2'])
-            channel.do_localbridge(other)
-        elif event_name == 'Rename':
+        elif event_name == 'NewConnectedLine':
             channel = self._registry.get_by_name(event['Channel'])
-            self._registry.remove(channel)
-            channel.set_name(event['Newname'])
-            self._registry.add(channel)
-        elif event_name in 'Bridge':
-            channel1 = self._registry.get_by_name(event['Channel1'])
-            channel2 = self._registry.get_by_name(event['Channel2'])
+            channel.set_connected_line(event)
+        elif event_name == 'LocalBridge':
+            channel = self._registry.get_by_name(event.get('Channel1', event.get('LocalOneChannel')))
+            other = self._registry.get_by_name(event.get('Channel2', event.get('LocalTwoChannel')))
+            channel.do_localbridge(other)
 
-            if event['Bridgestate'] == 'Link':
-                channel1.do_link(channel2)
-            elif event['Bridgestate'] == 'Unlink':
-                channel1.do_unlink(channel2)
-            else:
-                raise ValueError('Unrecognized Bridgestate: %s' % event)
-        elif event_name == 'Masquerade':
-            # A Masquerade destroys the Original and puts the guts of
-            # Clone into it. Afterwards, the Clone channel will be
-            # removed.
-            clone = self._registry.get_by_name(event['Clone'])
-            original = self._registry.get_by_name(event['Original'])
-
-            if event['CloneState'] != event['OriginalState']:
-                # For blonde transfers, the original state is Ring.
-                assert event['OriginalState'] in ('Ring', 'Ringing')
-                assert event['CloneState'] == 'Up', event
-
-                # This is a call pickup?
-                if event['OriginalState'] == 'Ringing':
-                    self._raw_call_pickup(clone, original)
-                    original._state = AST_STATE_UP
-                    self._raw_b_up(original)
-                elif event['OriginalState'] == 'Ring':
-                    # The channel state is changed from Ring to Up, change channel state and call _raw_a_up.
-                    original._state = AST_STATE_UP
-                    self._raw_a_up(original)
-
-            original.do_masquerade(clone)
         elif event_name == 'Hangup':
             channel = self._registry.get_by_name(event['Channel'])
             self._raw_hangup(channel, event)
 
-        elif event_name == 'Dial':
-            if event['SubEvent'] == 'Begin':
-                source = self._registry.get_by_uniqueid(event['UniqueID'])
-                target = self._registry.get_by_uniqueid(event['DestUniqueID'])
+        elif event_name == 'DialBegin':
+            source = self._registry.get_by_uniqueid(event['Uniqueid'])
+            target = self._registry.get_by_uniqueid(event['DestUniqueid'])
 
-                # Verify target is not being dialed already.
-                assert not target.back_dial
+            # Verify target is not being dialed already.
+            assert not target.back_dial
 
-                # _fwd_dials is a list of channels being dialed by A.
-                source.fwd_dials.append(target)
+            # _fwd_dials is a list of channels being dialed by A.
+            source.fwd_dials.append(target)
 
-                # _back_dial is the channel dialing B.
-                target.back_dial = source
-            elif event['SubEvent'] == 'End':
-                # This is cleaned up after Hangup.
-                pass
-            else:
-                raise ValueError('Unrecognized Dial SubEvent: %s' % event)
+            # _back_dial is the channel dialing B.
+            target.back_dial = source
 
-        elif event_name == 'Transfer':
+        elif event_name == 'DialEnd':
+            source = self._registry.get_by_uniqueid(event['Uniqueid'])
+            target = self._registry.get_by_uniqueid(event['DestUniqueid'])
+
+            # Verify target is not being dialed already.
+            assert target.back_dial
+
+            # _fwd_dials is a list of channels being dialed by A.
+            source.fwd_dials.remove(target)
+
+            # _back_dial is the channel dialing B.
+            target.back_dial = None
+
+        elif event_name == 'AttendedTransfer':
             # Both TargetChannel and TargetUniqueid can be used to match
             # the target channel; they can be used interchangeably.
-            channel = self._registry.get_by_name(event['Channel'])
-            target = self._registry.get_by_name(event['TargetChannel'])
-            assert target == self._registry.get_by_uniqueid(event['TargetUniqueid'])
+            channel = self._registry.get_by_name(event['OrigTransfererChannel'])
+            target = self._registry.get_by_name(event['SecondTransfererChannel'])
+            assert target == self._registry.get_by_uniqueid(event['SecondTransfererUniqueid'])
 
-            if event['TransferType'] == 'Attended':
-                self._raw_attended_transfer(channel, target)
-            elif event['TransferType'] == 'Blind':
-                self._raw_blind_transfer(channel, target, event['TransferExten'])
+            if event['DestType'] == 'Bridge':
+                self._raw_attended_transfer(channel, target, event)
+            elif event['DestType'] == 'App' and event['DestApp'] == 'Dial':
+                self._raw_blonde_transfer(channel, target, event)
             else:
                 raise NotImplementedError(event)
 
-        elif event_name == 'AgentCalled':
-            # The Queue app does not create regular dials for calls passing
-            # through it. So essentially, you've got an incoming channel,
-            # a local bridge and a destination channel, but no way to tie the
-            # incoming channel and local bridge together (until the incoming
-            # and destination channels are bridged). This in turn makes
-            # get_dialing_channel() return the back part of the local bridge
-            # (before the masquarade) or just the destination channel. This
-            # makes Cacofonisk call hooks with bogus data.
-            #
-            # The way to remedy this is by tracking the AgentCalled events,
-            # which, similar to the dials, tie the incoming channel and local
-            # bridge together.
-            #
-            # IMPORTANT: This requires the `eventwhencalled` parameter to be
-            # enabled on the Queue, or these events will not be raised (and
-            # you'll get bogus data).
-            source = self._registry.get_by_name(event['ChannelCalling'])
-            target = self._registry.get_by_name(event['DestinationChannel'])
+        elif event_name == 'BridgeCreate':
+            self._bridge_registry.create(event)
 
-            assert not target.back_dial
+        elif event_name == 'BridgeEnter':
+            bridge = self._bridge_registry.get_by_uniqueid(event['BridgeUniqueid'])
+            bridge.enter(event)
 
-            source.fwd_dials.append(target)
-            target.back_dial = source
+            channel = self._registry.get_by_uniqueid(event['Uniqueid'])
+            channel._bridge = bridge
+
+            if channel.is_sip and event['Linkedid'] == event['Uniqueid'] and not channel._is_picked_up:
+                sip_peers = [peer for peer in bridge.peers if peer.is_sip and peer != channel]
+
+                if sip_peers:
+                    channel._is_picked_up = True
+                    b_chan = sip_peers[0]  # TODO: This will likely break on conference calls.
+
+                    self.on_up(event['Linkedid'], channel.callerid, event['Exten'], b_chan.callerid)
+
+        elif event_name == 'BridgeLeave':
+            bridge = self._bridge_registry.get_by_uniqueid(event['BridgeUniqueid'])
+            bridge.leave(event)
+
+            channel = self._registry.get_by_uniqueid(event['Uniqueid'])
+            channel._bridge = None
+
+        elif event_name == 'BridgeDestroy':
+            self._bridge_registry.destroy(event)
 
         elif event_name == 'UserEvent':
             self.on_user_event(event)
@@ -1028,7 +960,7 @@ class ChannelManager(object):
                     channel.callerid.number,
                     [channel.callerid]
                 )
-            elif a_chan.is_relevant:
+            elif a_chan.is_sip:
                 # We'll want to send one ringing event for all targets. So
                 # let's figure out to whom a_chan has open dials. To ensure
                 # only one event is raised, we'll check all the uniqueids and
@@ -1040,14 +972,14 @@ class ChannelManager(object):
                 for b_chan in open_dials:
                     if b_chan == channel:
                         # Ensure a notification is only sent once.
-                        self.on_b_dial(a_chan.uniqueid, a_chan.callerid, a_chan.exten, targets)
+                        self.on_b_dial(channel.linkedid, a_chan.callerid, a_chan.exten, targets)
                     else:
                         # To prevent notifications from being sent multiple times,
                         # we set a flag on all other channels except for the one
                         # starting to ring right now.
                         b_chan.custom['ignore_b_dial'] = True
 
-    def _raw_attended_transfer(self, channel, target):
+    def _raw_blonde_transfer(self, channel, target, event):
         """
         Handle the attended transfer event.
 
@@ -1059,58 +991,71 @@ class ChannelManager(object):
                 redirector used to set up the call to the person to whom the
                 call is being transferred.
         """
-        if target.is_bridged:
-            # The redirector already has an audio bridge open with the new
-            # callee. This means that we're handling an attended transfer.
+        if channel.is_called_chan:
+            # The transferrer was the B side.
+            old_a_chan = channel.get_dialing_channel()
+            new_caller = old_a_chan
+        elif channel.is_calling_chan:
+            # The transferrer was the A side.
+            old_a_chan = channel
 
-            transferred_channel = channel.bridged_channel
-            c_chan = target.bridged_channel
+            # Because the channel is not bridged, figuring out who the
+            # redirector first talked to is a bit more complicated.
+            # Fortunately, there should only be one open dial left.
+            dialed_channels = channel.get_dialed_channels()
+            assert len(dialed_channels) == 1
+            new_caller = list(dialed_channels)[0]
 
-            if channel.is_called_chan:
-                # Channel has a back dial, meaning it was B who started the
-                # transfer. That means channel is bridged with A.
-                old_a_chan = channel.bridged_channel
-            else:
-                # Channel doesn't have a back dialing, meaning it was A who
-                # started the transfer. That means channel is bridged with B.
-                old_a_chan = channel
-
-                # Mark the channel as being transferred so we don't send
-                # hangup notifications for it.
-                channel.custom['ignore_a_hangup'] = True
-
-            self.on_warm_transfer(target.uniqueid, old_a_chan.uniqueid,
-                                  target.callerid, transferred_channel.callerid, c_chan.callerid)
+            # Mark the channel as ignored so we don't send another
+            # hangup notification after the transfer.
+            channel.custom['ignore_a_hangup'] = True
         else:
-            # The redirector doesn't have an audio bridge with the new callee.
-            # This means the redirector started the transfer before talking to
-            # the redirection target, which is a blonde transfer.
+            # This channel doesn't have sides. Probably garbage data.
+            return
 
-            if channel.is_called_chan:
-                # The transferrer was the B side.
-                old_a_chan = channel.get_dialing_channel()
-                new_caller = old_a_chan
-            elif channel.is_calling_chan:
-                # The transferrer was the A side.
-                old_a_chan = channel
+        targets = [c_chan.callerid for c_chan in target.get_dialed_channels()]
+        self.on_cold_transfer(target.uniqueid, old_a_chan.uniqueid,
+                              target.callerid, new_caller.callerid, target.exten, targets)
 
-                # Because the channel is not bridged, figuring out who the
-                # redirector first talked to is a bit more complicated.
-                # Fortunately, there should only be one open dial left.
-                dialed_channels = channel.get_dialed_channels()
-                assert len(dialed_channels) == 1
-                new_caller = list(dialed_channels)[0]
+    def _raw_attended_transfer(self, channel, target, event):
+        """
+        Handle an attended transfer.
 
-                # Mark the channel as ignored so we don't send another
-                # hangup notification after the transfer.
-                channel.custom['ignore_a_hangup'] = True
-            else:
-                # This channel doesn't have sides. Probably garbage data.
-                return
+        Args:
+            channel (Channel): The original channel is the channel which the
+                redirector used to talk with the person who's being
+                transferred.
+            target (Channel): The target channel is the channel which the
+                redirector used to set up the call to the person to whom the
+                call is being transferred.
+            event (dict): The data of the AttendedTransfer event.
+        """
+        target_bridge = self._bridge_registry.get_by_uniqueid(event['SecondBridgeUniqueid'])
+        peer_one, peer_two = target_bridge.peers
 
-            targets = [c_chan.callerid for c_chan in target.get_dialed_channels()]
-            self.on_cold_transfer(target.uniqueid, old_a_chan.uniqueid,
-                                  target.callerid, new_caller.callerid, target.exten, targets)
+        # The transfer is done, the original bridge is empty and SecondBridge
+        # contain the channel we've transferred and the transfer target.
+        if peer_one.linkedid == event['OrigTransfererLinkedid']:
+            transfer_source = peer_one
+            transfer_target = peer_two
+        elif peer_two.linkedid == event['OrigTransfererLinkedid']:
+            transfer_source = peer_two
+            transfer_target = peer_one
+        else:
+            raise AssertionError()
+
+        transfer_source._side = 'A'
+
+        self.on_warm_transfer(
+            call_id=transfer_source.linkedid,
+            merged_id=transfer_target.linkedid,
+            redirector=channel.callerid,
+            caller=transfer_source.callerid,
+            destination=transfer_target.callerid,
+        )
+
+        channel.custom['suppress_hangup'] = True
+        target.custom['suppress_hangup'] = True
 
     def _raw_blind_transfer(self, channel, target, transfer_exten):
         """
@@ -1135,67 +1080,6 @@ class ChannelManager(object):
         channel.custom['ignore_a_hangup'] = True
         channel._exten = transfer_exten
 
-    def _raw_call_pickup(self, winner, loser):
-        """
-        Handle a call pickup event.
-
-        Args:
-            winner (Channel): The channel of the phone picking up.
-            loser (Channel): The channel of the phone which rang.
-        """
-        # The CLI of winner cannot be set properly. It has dialed in, so
-        # we have no CLI. Whatever is in there is wrong. Instead, we
-        # provide the destination details of loser, since that is what's
-        # used to dial in.
-        winner._callerid = winner.callerid.replace(
-            name=loser.callerid.name,
-            number=loser.callerid.number,
-            is_public=loser.callerid.is_public
-        )
-
-    def _raw_a_up(self, channel):
-        """
-        Handle a ChannelState event where A side comes up.
-
-        Args:
-            channel (Channel): The relevant A side channel.
-        """
-        channel._side = 'A'
-
-        if channel.is_sip:
-            a_chan = channel
-            b_chans = channel.get_dialed_channels()
-            for b_chan in b_chans:
-                if b_chan.is_up:
-                    self.on_up(a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid)
-
-    def _raw_b_up(self, channel):
-        """
-        Handle a ChannelState event where B side comes up.
-
-        Args:
-            channel (Channel): The relevant B side channel.
-        """
-        channel._side = 'B'
-
-        if channel.is_sip:
-            a_chan = channel.get_dialing_channel()
-            b_chan = channel
-            if a_chan.is_up:
-                if a_chan.is_connectab:
-                    caller, callee = a_chan.connectab_participants()
-                    real_a_chan = a_chan._fwd_local_bridge
-                    real_a_chan._callerid = a_chan.callerid.replace(code=caller.callerid.code)
-
-                    self.on_up(
-                        a_chan._fwd_local_bridge.uniqueid,
-                        real_a_chan.callerid,
-                        b_chan.callerid.number,
-                        b_chan.callerid
-                    )
-                else:
-                    self.on_up(a_chan.uniqueid, a_chan.callerid, a_chan.exten, b_chan.callerid)
-
     def _raw_hangup(self, channel, event):
         """
         Handle a Hangup event from Asterisk.
@@ -1204,7 +1088,7 @@ class ChannelManager(object):
             channel (Channel): The channel which is hung up.
             event (Event): The data of the event.
         """
-        if channel.is_relevant:
+        if channel.is_sip:
             a_chan = channel.get_dialing_channel()
 
             if 'raw_blind_transfer' in channel.custom:
@@ -1232,6 +1116,9 @@ class ChannelManager(object):
                 # with the transfer, we shouldn't send a hangup notification.
                 pass
 
+            elif 'suppress_hangup' in channel.custom:
+                pass
+
             elif a_chan.is_connectab:
                 # A called channel, in connectab both sip channels are 'called'.
                 caller, callee = channel.connectab_participants()
@@ -1254,7 +1141,7 @@ class ChannelManager(object):
                 # user.
 
                 reason = self._hangup_reason(channel, event)
-                self.on_a_hangup(channel.uniqueid, channel.callerid, channel.exten, reason)
+                self.on_a_hangup(channel.linkedid, channel.callerid, channel.exten, reason)
 
         # We've sent all relevant notifications regarding the channel
         # being gone, so we can forget it ourselves now as well.
@@ -1396,7 +1283,7 @@ class ChannelManager(object):
         Args:
             event (Message): Dict-like object with all attributes in the event.
         """
-        self._reporter.trace_msg('user_event: {}'.format(event))
+        # self._reporter.trace_msg('user_event: {}'.format(event))
         self._reporter.on_user_event(event)
 
     def on_up(self, call_id, caller, to_number, callee):

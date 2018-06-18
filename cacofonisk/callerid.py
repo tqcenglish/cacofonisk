@@ -17,7 +17,13 @@ class CallerId(namedtuple('CallerIdBase', 'code name number is_public')):
         caller = CallerId(name='My name', number='+311234567', is_public=True)
         caller = caller.replace(code=123456789)
     """
-    def __new__(cls, code=0, name='', number=None, is_public=None):
+    def __new__(cls, code=0, name='', number='', is_public=True):
+        if name == '<unknown>':
+            name = ''
+
+        if number == '<unknown>':
+            number = ''
+
         return super().__new__(cls, code, name, number, is_public)
 
     def replace(self, **kwargs):
@@ -31,8 +37,12 @@ class CallerId(namedtuple('CallerIdBase', 'code name number is_public')):
         Returns:
             CallerId: A new instance with replaced values.
         """
-        # The method already exists on the namedtuple. We simply make it
-        # public.
+        if 'name' in kwargs and kwargs['name'] == '<unknown>':
+            kwargs['name'] = ''
+
+        if 'number' in kwargs and kwargs['number'] == '<unknown>':
+            kwargs['number'] = ''
+
         return self._replace(**kwargs)
 
     def _is_public_tag(self):
