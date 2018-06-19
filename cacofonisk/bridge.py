@@ -39,6 +39,10 @@ class Bridge(object):
     def peers(self):
         return self._peers
 
+    @property
+    def uniqueid(self):
+        return self._id
+
     def __len__(self):
         return len(self._peers)
 

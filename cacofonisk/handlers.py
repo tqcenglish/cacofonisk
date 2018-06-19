@@ -214,8 +214,6 @@ class EventHandler(object):
                 event['OrigTransfererChannel'])
             second_transferer = self._registry.get_by_name(
                 event['SecondTransfererChannel'])
-            assert second_transferer == self._registry.get_by_uniqueid(
-                event['SecondTransfererUniqueid'])
 
             if event['DestType'] == 'Bridge':
                 self._raw_attended_transfer(
@@ -225,6 +223,9 @@ class EventHandler(object):
                     orig_transferer, second_transferer, event)
             else:
                 raise NotImplementedError(event)
+
+        elif event_name == 'BlindTransfer':
+            self._raw_blind_transfer(event)
 
         elif event_name == 'BridgeCreate':
             self._bridge_registry.create(event)
@@ -237,24 +238,8 @@ class EventHandler(object):
             channel = self._registry.get_by_uniqueid(event['Uniqueid'])
             channel._bridge = bridge
 
-            if (
-                    channel.is_sip and
-                    not channel._is_picked_up
-            ):
-                sip_peers = [peer for peer in bridge.peers if
-                             peer.is_sip and peer != channel]
-
-                if sip_peers:
-                    channel._is_picked_up = True
-                    # TODO: This will likely break on conference calls.
-                    b_chan = sip_peers[0]
-
-                    self.on_up(
-                        call_id=event['Linkedid'],
-                        caller=channel.callerid,
-                        to_number=event['Exten'],
-                        callee=b_chan.callerid,
-                    )
+            if channel.is_sip and not channel._is_picked_up:
+                self._raw_in_call(channel, bridge, event)
 
         elif event_name == 'BridgeLeave':
             bridge = self._bridge_registry.get_by_uniqueid(
@@ -315,9 +300,8 @@ class EventHandler(object):
                 # Transfer message earlier and recorded it in this
                 # attribute. We'll translate this b_dial to first a
                 # on_b_dial and then the on_transfer event.
-                redirector_chan = a_chan.custom.pop('raw_blind_transfer')
+                transferer = a_chan.custom.pop('raw_blind_transfer')
 
-                redirector = redirector_chan.callerid
                 target_chans = a_chan.get_dialed_channels()
                 targets = [party.callerid for party in target_chans]
 
@@ -328,58 +312,27 @@ class EventHandler(object):
                     if target != channel:
                         target.custom['ignore_b_dial'] = True
 
-                # The dial from the transferree was setup by the transfer app,
-                # so it contains garbage codes like ID12345 as the extension
-                # rather than a dialed number.
-                a_chan._exten = channel.callerid.number
-
                 # We're going to want to simulate a pre-flight dial event for
-                # consistency with attended transfers. In this dial, the
-                # redirector supposedly calls the person to who the call is
+                # consistency with blonde transfers. In this dial, the
+                # transferer supposedly calls the person to who the call is
                 # going to be redirected to.
                 #
-                # It's important that a b_dial has been sent for the call
-                # we're going to be left with afterwards, but also that the
-                # call ID is different from the call before the transfer.
-                if redirector_chan.is_calling_chan:
-                    # This transfer was initiated on the A side, which means
-                    # we're going to be left with B -> C afterwards. No dial
-                    # event was triggered with B as caller, so we should do
-                    # that now.
-                    self.on_b_dial(
-                        call_id=a_chan.uniqueid,
-                        caller=redirector,
-                        to_number=a_chan.exten,
-                        targets=targets,
-                    )
-                else:
-                    # This transfer was initiated on the B side, which means
-                    # we're going to be left with A -> C afterwards. A dial
-                    # event with A was already generated, so we could (ab)use
-                    # any old channel here to simulate a merged call.
-                    # So why specifically use redirector_chan? Just read on...
-                    self.on_b_dial(
-                        call_id=redirector_chan.uniqueid,
-                        caller=redirector,
-                        to_number=redirector_chan.exten,
-                        targets=targets,
-                    )
+                # We need to use something for an substitute linkedid.
+                # From Channel, we know for sure it's not the original
+                # master channel, so we can use it's Uniqueid.
+                self.on_b_dial(
+                    call_id=channel.uniqueid,
+                    caller=transferer.callerid,
+                    to_number=a_chan.exten,
+                    targets=targets,
+                )
 
-                # Now it's time to send a transfer event. dialing_channel is
-                # always the channel we're going to be left with (regardless
-                # of whether it was originally A or B), so that's our new
-                # call_id.
-                #
-                # See, redirector_chan is always the call we'll want to merge.
-                # if the call was initiated on the A side, redirector_chan is
-                # the original call which we will end. If the transfer was
-                # initiated on the B side, then it's our dummy channel.
                 self.on_cold_transfer(
-                    call_id=a_chan.uniqueid,
-                    merged_id=redirector_chan.uniqueid,
-                    redirector=redirector,
+                    call_id=channel.linkedid,
+                    merged_id=channel.uniqueid,
+                    redirector=transferer.callerid,
                     caller=a_chan.callerid,
-                    to_number=redirector_chan.exten,
+                    to_number=transferer.exten,
                     targets=targets,
                 )
             elif a_chan.is_connectab:
@@ -421,6 +374,56 @@ class EventHandler(object):
                         # times, we set a flag on all other channels except
                         # for the one starting to ring right now.
                         b_chan.custom['ignore_b_dial'] = True
+
+    def _raw_in_call(self, channel, bridge, event):
+        """
+        Post-process a BridgeEnter event to notify of a call in progress.
+
+        This function will check if the bridge already contains other SIP
+        channels. If so, it's interpreted as a call between two channels
+        being connected.
+
+        WARNING: This function does not behave as desired for bridges with 3+
+        parties, e.g. conference calls.
+
+        Args:
+            channel (Channel): The channel entering the bridge.
+            bridge (Bridge): The bridge the channel enters.
+            event (dict): The BridgeEnter event.
+        """
+        sip_peers = [peer for peer in bridge.peers if
+                     peer.is_sip and peer != channel]
+
+        if sip_peers:
+            # Only calling channels have extensions, and Asterisk's exten 's'
+            # means no extension.
+            if channel.exten == 's':
+                b_chan = channel
+
+                a_chan = None
+                for chan in sip_peers:
+                    if chan.exten != 's':
+                        a_chan = chan
+                        break
+
+                assert a_chan, ('Bridge {} does not have any calling '
+                                'channels: {}'.format(
+                                bridge.uniqueid, bridge.peers)
+                                )
+            else:
+                a_chan = channel
+                b_chan = sip_peers[0]
+
+            # Set a flag to prevent the event from being fired again.
+            # FIXME: Checking and setting is done on different channels?
+            a_chan._is_picked_up = True
+
+            self.on_up(
+                call_id=event['Linkedid'],
+                caller=a_chan.callerid,
+                to_number=a_chan.exten,
+                callee=b_chan.callerid,
+            )
 
     def _raw_blonde_transfer(self, orig_transferer, second_transferer, event):
         """
@@ -506,7 +509,7 @@ class EventHandler(object):
         orig_transferer.custom['suppress_hangup'] = True
         second_transferer.custom['suppress_hangup'] = True
 
-    def _raw_blind_transfer(self, channel, target, transfer_exten):
+    def _raw_blind_transfer(self, event):
         """
         Handle a blind (cold) transfer event.
 
@@ -515,19 +518,20 @@ class EventHandler(object):
         on_b_dial and the on_transfer.
 
         Args:
-            channel (Channel): The channel to be transferred.
-            target (Channel): The target channel.
-            transfer_exten (str): The phone number being transferred to.
+            event (dict): The data of the BlindTransfer event.
         """
-        if channel.is_called_chan:
-            target.custom['raw_blind_transfer'] = channel
-        else:
-            target.custom['raw_blind_transfer'] = channel
+        transferer = self._registry.get_by_uniqueid(
+            event['TransfererUniqueid'])
+        transferee = self._registry.get_by_uniqueid(
+            event['TransfereeUniqueid'])
+
+        transferee.custom['raw_blind_transfer'] = transferer
+        transferee._is_picked_up = False
 
         # Mark the original channel as ignored, so we don't report a hangup
         # just after the transfer.
-        channel.custom['ignore_a_hangup'] = True
-        channel._exten = transfer_exten
+        transferer.custom['suppress_hangup'] = True
+        transferee._exten = event['Extension']
 
     def _raw_hangup(self, channel, event):
         """
@@ -796,6 +800,16 @@ class DebugEventHandler(EventHandler):
 
 
 class NoOpEventHandler(DebugEventHandler):
+    """
+    NoOpEventHandler is a simple EventHandler which simply passes the events to
+    the reporter without further processing. This is useful for generating
+    logs, if regular event processing is not desired.
+    """
+    def on_event(self, event):
+        self._reporter.trace_ami(event)
+
+
+class NoOpSilentEventHandler(EventHandler):
     """
     NoOpEventHandler is a simple EventHandler which simply passes the events to
     the reporter without further processing. This is useful for generating

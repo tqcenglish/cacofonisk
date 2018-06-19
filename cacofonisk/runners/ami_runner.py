@@ -13,14 +13,14 @@ class AmiRunner(object):
     A Runner which reads Asterisk AMI events and passes them to a
     EventHandler instance.
     """
-    def __init__(self, amihosts, reporter, channel_manager=EventHandler, logger=None):
+    def __init__(self, amihosts, reporter, handler=EventHandler, logger=None):
         """
         Args:
             amihosts [dict]: A list of dictionaries.
         """
         self.amihosts = amihosts
         self.reporter = reporter
-        self.channel_manager = channel_manager
+        self.event_handler = handler
         self.loop = asyncio.get_event_loop()
         self.logger = logger if logger is not None else logging.getLogger(__name__)
 
@@ -51,22 +51,23 @@ class AmiRunner(object):
             ssl=False, encoding='utf8', log=self.logger)
 
         # Create our own channel manager.
-        channel_manager = self.channel_manager(
+        event_handler = self.event_handler(
             reporter=self.reporter,
         )
 
         # Tell Panoramisk to which events we want to listen.
-        for event_name in channel_manager.INTERESTING_EVENTS:
+        for event_name in event_handler.INTERESTING_EVENTS:
             amimgr.register_event(event_name, self.on_event)
 
         # Record them for later use.
-        self.amimgrs[amimgr] = channel_manager
+        self.amimgrs[amimgr] = event_handler
 
         # Tell asyncio what to work on.
         asyncio.ensure_future(amimgr.connect())
 
     def on_event(self, amimanager, amievent):
-        """When an event comes in, pass it to the relevant channel manager.
+        """
+        When an event comes in, pass it to the relevant channel manager.
 
         Args:
             amimanager (Manager): The AMI manager from Panoramisk.
@@ -86,9 +87,10 @@ class AmiRunner(object):
         self.loop.run_forever()
 
     def _close(self, signal, frame):
-        """Clean shutdown the runner.
         """
-        print('Disconnecting from Asterisk...')
+        Clean shutdown the runner.
+        """
+        self.reporter.trace_msg('Disconnecting from Asterisk...')
         for amimgr in self.amimgrs:
             amimgr.close()
         self.reporter.close()
