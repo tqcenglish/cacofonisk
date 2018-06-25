@@ -55,7 +55,7 @@ class TestReporter(BaseReporter):
             'event': 'on_up',
             'caller': caller,
             'to_number': to_number,
-            'callee': callee,
+            'target': callee,
             'call_id': call_id,
         })
 
