@@ -91,7 +91,7 @@ class EventHandler(object):
         # Events about transfers.
         'BlindTransfer', 'AttendedTransfer',
         # UserEvents
-        'UserEvent'
+        # 'UserEvent',
     )
 
     def __init__(self, reporter):
@@ -182,30 +182,26 @@ class EventHandler(object):
             self._raw_hangup(channel, event)
 
         elif event_name == 'DialBegin':
-            source = self._registry.get_by_uniqueid(event['Uniqueid'])
-            target = self._registry.get_by_uniqueid(event['DestUniqueid'])
+            channel = self._registry.get_by_uniqueid(event['Uniqueid'])
+            destination = self._registry.get_by_uniqueid(event['DestUniqueid'])
 
             # Verify target is not being dialed already.
-            assert not target.back_dial
+            assert not destination.back_dial
 
             # _fwd_dials is a list of channels being dialed by A.
-            source.fwd_dials.append(target)
+            channel.fwd_dials.append(destination)
 
             # _back_dial is the channel dialing B.
-            target.back_dial = source
+            destination.back_dial = channel
 
         elif event_name == 'DialEnd':
-            source = self._registry.get_by_uniqueid(event['Uniqueid'])
-            target = self._registry.get_by_uniqueid(event['DestUniqueid'])
+            channel = self._registry.get_by_uniqueid(event['Uniqueid'])
+            destination = self._registry.get_by_uniqueid(event['DestUniqueid'])
 
-            # Verify target actually has an active dial.
-            assert target.back_dial
+            destination.back_dial = None
 
-            # _fwd_dials is a list of channels being dialed by A.
-            source.fwd_dials.remove(target)
-
-            # _back_dial is the channel dialing B.
-            target.back_dial = None
+            if destination in channel.fwd_dials:
+                channel.fwd_dials.remove(destination)
 
         elif event_name == 'AttendedTransfer':
             # Both TargetChannel and TargetUniqueid can be used to match

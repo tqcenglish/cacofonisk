@@ -6,27 +6,52 @@ class TestQueue(ChannelEventsTestCase):
 
     def test_queue_simple(self):
         """
-        Test a successful call through a queue.
+        Test a simple call through a queue to a single account.
         """
-        events = self.run_and_get_events('fixtures/queue/queue_simple.json')
+        fixture_file = 'fixtures/queue/queue_simple.json'
+        events = self.run_and_get_events(fixture_file)
+
+        outbound_caller = CallerId(code=150010001, number='+31150010001')
+        outbound_target = CallerId(code=150010001, number='+31150010004')
+
+        inbound_caller = CallerId(code=15001, number='+31150010001')
+        inbound_target = CallerId(code=150010002, number='+31150010004')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
-                'call_id': 'e83df36bebbe-1507019160.61',
-                'caller': CallerId(code=15001, number='+31150010002', is_public=True),
-                'to_number': '+31150010004',
-                'targets': [CallerId(code=150010001, number='+31150010004', is_public=True)],
+                'call_id': '195176c06ab8-1529939196.508',
+                'caller': outbound_caller,
+                'to_number': '0150010004',
+                'targets': [outbound_target],
             }),
             ('on_up', {
-                'call_id': 'e83df36bebbe-1507019160.61',
-                'caller': CallerId(code=15001, number='+31150010002', is_public=True),
+                'call_id': '195176c06ab8-1529939196.508',
+                'caller': outbound_caller,
+                'to_number': '0150010004',
+                'target': outbound_target,
+            }),
+            ('on_b_dial', {
+                'call_id': '195176c06ab8-1529939196.518',
+                'caller': inbound_caller,
                 'to_number': '+31150010004',
-                'callee': CallerId(code=150010001, number='+31150010004', is_public=True),
+                'targets': [inbound_target],
+            }),
+            ('on_up', {
+                'call_id': '195176c06ab8-1529939196.518',
+                'caller': inbound_caller,
+                'to_number': '+31150010004',
+                'target': inbound_target,
             }),
             ('on_hangup', {
-                'call_id': 'e83df36bebbe-1507019160.61',
-                'caller': CallerId(code=15001, number='+31150010002', is_public=True),
+                'call_id': '195176c06ab8-1529939196.518',
+                'caller': inbound_caller,
                 'to_number': '+31150010004',
+                'reason': 'completed',
+            }),
+            ('on_hangup', {
+                'call_id': '195176c06ab8-1529939196.508',
+                'caller': outbound_caller,
+                'to_number': '0150010004',
                 'reason': 'completed',
             }),
         ))
@@ -35,30 +60,53 @@ class TestQueue(ChannelEventsTestCase):
 
     def test_queue_group(self):
         """
-        Test a call through a queue to a call group with multiple accounts.
+        Test a simple call through a queue to a group.
         """
-        events = self.run_and_get_events('fixtures/queue/queue_group.json')
+        fixture_file = 'fixtures/queue/queue_group.json'
+        events = self.run_and_get_events(fixture_file)
+
+        outbound_caller = CallerId(code=150010001, number='+31150010001')
+        outbound_target = CallerId(code=150010001, number='+31150010004')
+
+        inbound_caller = CallerId(code=15001, number='+31150010001')
+        inbound_target = CallerId(code=150010002, number='+31150010004')
+        inbound_target_2 = CallerId(code=150010003, number='+31150010004')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
-                'call_id': 'e83df36bebbe-1507022898.69',
-                'caller': CallerId(code=15001, number='+31150010002', is_public=True),
-                'to_number': '+31150010004',
-                'targets': [
-                    CallerId(code=150010001, number='+31150010004', is_public=True),
-                    CallerId(code=150010003, number='+31150010004', is_public=True),
-                ],
+                'call_id': '195176c06ab8-1529938920.357',
+                'caller': outbound_caller,
+                'to_number': '0150010004',
+                'targets': [outbound_target],
             }),
             ('on_up', {
-                'call_id': 'e83df36bebbe-1507022898.69',
-                'caller': CallerId(code=15001, number='+31150010002', is_public=True),
+                'call_id': '195176c06ab8-1529938920.357',
+                'caller': outbound_caller,
+                'to_number': '0150010004',
+                'target': outbound_target,
+            }),
+            ('on_b_dial', {
+                'call_id': '195176c06ab8-1529938920.367',
+                'caller': inbound_caller,
                 'to_number': '+31150010004',
-                'callee': CallerId(code=150010003, number='+31150010004', is_public=True),
+                'targets': [inbound_target, inbound_target_2],
+            }),
+            ('on_up', {
+                'call_id': '195176c06ab8-1529938920.367',
+                'caller': inbound_caller,
+                'to_number': '+31150010004',
+                'target': inbound_target,
             }),
             ('on_hangup', {
-                'call_id': 'e83df36bebbe-1507022898.69',
-                'caller': CallerId(code=15001, number='+31150010002', is_public=True),
+                'call_id': '195176c06ab8-1529938920.367',
+                'caller': inbound_caller,
                 'to_number': '+31150010004',
+                'reason': 'completed',
+            }),
+            ('on_hangup', {
+                'call_id': '195176c06ab8-1529938920.357',
+                'caller': outbound_caller,
+                'to_number': '0150010004',
                 'reason': 'completed',
             }),
         ))
@@ -69,20 +117,45 @@ class TestQueue(ChannelEventsTestCase):
         """
         Test a call where A exits the queue before B can pick up.
         """
-        events = self.run_and_get_events('fixtures/queue/queue_a_cancel_hangup.json')
+        events = self.run_and_get_events('fixtures/queue/queue_a_cancel.json')
+
+        outbound_caller = CallerId(code=150010001, number='+31150010001')
+        outbound_target = CallerId(code=150010001, number='+31150010004')
+
+        inbound_caller = CallerId(code=15001, number='+31150010001')
+        inbound_target = CallerId(code=150010002, number='+31150010004')
+        inbound_target_2 = CallerId(code=150010003, number='+31150010004')
 
         expected_events = self.events_from_tuples((
             ('on_b_dial', {
-                'call_id': '0f00dcaa884f-1508767736.46',
-                'caller': CallerId(code=150010003, name='Tom Kline', number='203', is_public=True),
-                'to_number': '401',
-                'targets': [CallerId(code=150010001, number='401', is_public=True)],
+                'call_id': '195176c06ab8-1529939079.439',
+                'caller': outbound_caller,
+                'to_number': '0150010004',
+                'targets': [outbound_target],
+            }),
+            ('on_up', {
+                'call_id': '195176c06ab8-1529939079.439',
+                'caller': outbound_caller,
+                'to_number': '0150010004',
+                'target': outbound_target,
+            }),
+            ('on_b_dial', {
+                'call_id': '195176c06ab8-1529939079.449',
+                'caller': inbound_caller,
+                'to_number': '+31150010004',
+                'targets': [inbound_target, inbound_target_2],
             }),
             ('on_hangup', {
-                'call_id': '0f00dcaa884f-1508767736.46',
-                'caller': CallerId(code=150010003, name='Tom Kline', number='203', is_public=True),
-                'to_number': '401',
-                'reason': 'cancelled'
+                'call_id': '195176c06ab8-1529939079.439',
+                'caller': outbound_caller,
+                'to_number': '0150010004',
+                'reason': 'completed',
+            }),
+            ('on_hangup', {
+                'call_id': '195176c06ab8-1529939079.449',
+                'caller': inbound_caller,
+                'to_number': '+31150010004',
+                'reason': 'completed',
             }),
         ))
 
