@@ -15,7 +15,7 @@ class TransferSpammer(BaseReporter):
         caller_id = caller.number
         print("{callee.code} is being called by {caller.number}".format(callee=callee, caller=caller))
 
-    def on_warm_transfer(self, redirector, party1, party2):
+    def on_attended_transfer(self, redirector, party1, party2):
         print("Account with account code {redirector.account_code} just "
                 "transferred a call with callerid {party1.cli} to an extension at "
                 "{party2.exten}".format(

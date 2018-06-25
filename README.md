@@ -66,7 +66,7 @@ class ReportAllTheThings(BaseReporter):
         caller_number = caller.number
         print("{} is now in conversation with {}".format(caller_number, callee_account_code))
         
-    def on_warm_transfer(self, call_id, merged_id, redirector, caller, destination):
+    def on_attended_transfer(self, call_id, merged_id, redirector, caller, destination):
         print('{} is now calling with {} (was calling {})'.format(caller, destination, redirector))
         
     def on_cold_transfer(self, call_id, merged_id, redirector, caller, to_number, targets):

@@ -157,7 +157,7 @@ class TestConnectab(ChannelEventsTestCase):
                 'to_number': '0612345678',
                 'callee': CallerId(code=126680005, number='+31612345678', is_public=True),
             }),
-            ('on_warm_transfer', {
+            ('on_attended_transfer', {
                 'redirector': CallerId(code=126680005, number='+31853030900', is_public=True),
                 'caller': CallerId(code=126680005, number='217', is_public=True),
                 'callee': CallerId(code=126680005, number='+31612345678', is_public=True),

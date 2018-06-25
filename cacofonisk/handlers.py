@@ -37,7 +37,7 @@ class EventHandler(object):
                 # reason is a keyword to identify why a conversation ended.
                 pass
 
-            def on_warm_transfer(self, call_id, merged_id, transferor,
+            def on_attended_transfer(self, call_id, merged_id, transferor,
             party1, party1):
                 # Your code here. call_id and merged_id are unique strings to
                 # identify two conversations being merged into one.
@@ -184,6 +184,8 @@ class EventHandler(object):
         elif event_name == 'DialBegin':
             channel = self._registry.get_by_uniqueid(event['Uniqueid'])
             destination = self._registry.get_by_uniqueid(event['DestUniqueid'])
+            channel._side = 'A'
+            destination._side = 'B'
 
             # Verify target is not being dialed already.
             assert not destination.back_dial
@@ -234,7 +236,7 @@ class EventHandler(object):
             channel = self._registry.get_by_uniqueid(event['Uniqueid'])
             channel._bridge = bridge
 
-            if channel.is_sip and not channel._is_picked_up:
+            if not channel.is_local and not channel._is_picked_up:
                 self._raw_in_call(channel, bridge, event)
 
         elif event_name == 'BridgeLeave':
@@ -269,7 +271,6 @@ class EventHandler(object):
         Args:
             channel (Channel):
         """
-        channel._side = 'A'
         pass
 
     def _raw_b_dial(self, channel):
@@ -279,9 +280,7 @@ class EventHandler(object):
         Args:
             channel (Channel): The channel of the B side.
         """
-        channel._side = 'B'
-
-        if channel.is_sip:
+        if not channel.is_local:
             if 'ignore_b_dial' in channel.custom:
                 # Notifications were already sent for this channel.
                 # Unset the flag and move on.
@@ -289,7 +288,6 @@ class EventHandler(object):
                 return
 
             a_chan = channel.get_dialing_channel()
-            a_chan._side = 'A'
 
             if 'raw_blind_transfer' in a_chan.custom:
                 # This is an interesting exception: we got a Blind
@@ -347,7 +345,7 @@ class EventHandler(object):
                     to_number=channel.callerid.number,
                     targets=[channel.callerid],
                 )
-            elif a_chan.is_sip:
+            elif not a_chan.is_local:
                 # We'll want to send one ringing event for all targets. So
                 # let's figure out to whom a_chan has open dials. To ensure
                 # only one event is raised, we'll check all the uniqueids and
@@ -388,7 +386,7 @@ class EventHandler(object):
             event (dict): The BridgeEnter event.
         """
         sip_peers = [peer for peer in bridge.peers if
-                     peer.is_sip and peer != channel]
+                     not peer.is_local and peer != channel]
 
         if sip_peers:
             # Only calling channels have extensions, and Asterisk's exten 's'
@@ -402,10 +400,8 @@ class EventHandler(object):
                         a_chan = chan
                         break
 
-                assert a_chan, ('Bridge {} does not have any calling '
-                                'channels: {}'.format(
-                                bridge.uniqueid, bridge.peers)
-                                )
+                if not a_chan:
+                    return
             else:
                 a_chan = channel
                 b_chan = sip_peers[0]
@@ -494,10 +490,13 @@ class EventHandler(object):
 
         transfer_source._side = 'A'
 
-        self.on_warm_transfer(
+        if transfer_source._exten == 's':
+            transfer_source._exten = event['OrigTransfererExten']
+
+        self.on_attended_transfer(
             call_id=transfer_source.linkedid,
             merged_id=transfer_target.linkedid,
-            redirector=orig_transferer.callerid,
+            redirector=second_transferer.callerid,
             caller=transfer_source.callerid,
             destination=transfer_target.callerid,
         )
@@ -537,7 +536,7 @@ class EventHandler(object):
             channel (Channel): The channel which is hung up.
             event (Event): The data of the event.
         """
-        if channel.is_sip:
+        if not channel.is_local:
             a_chan = channel.get_dialing_channel()
 
             if 'raw_blind_transfer' in channel.custom:
@@ -668,7 +667,7 @@ class EventHandler(object):
             call_id, caller, to_number, targets))
         self._reporter.on_b_dial(call_id, caller, to_number, targets)
 
-    def on_warm_transfer(self, call_id, merged_id, redirector, caller,
+    def on_attended_transfer(self, call_id, merged_id, redirector, caller,
                          destination):
         """
         Gets invoked when an attended transfer is completed.
@@ -693,7 +692,7 @@ class EventHandler(object):
             '{} <== {} attn xfer: {} <--> {} (through {})'.format(
                 call_id, merged_id, caller, destination, redirector),
         )
-        self._reporter.on_warm_transfer(
+        self._reporter.on_attended_transfer(
             call_id, merged_id, redirector, caller, destination)
 
     def on_cold_transfer(self, call_id, merged_id, redirector, caller,

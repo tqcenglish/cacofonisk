@@ -113,7 +113,7 @@ class TestQueue(ChannelEventsTestCase):
 
         self.assertEqual(expected_events, events)
 
-    def test_a_cancel_hangup(self):
+    def test_queue_a_cancel(self):
         """
         Test a call where A exits the queue before B can pick up.
         """
@@ -192,7 +192,7 @@ class TestQueue(ChannelEventsTestCase):
                 'to_number': '203',
                 'callee': CallerId(code=150010003, number='203', is_public=True),
             }),
-            ('on_warm_transfer', {
+            ('on_attended_transfer', {
                 'new_id': 'e83df36bebbe-1507037917.120',
                 'merged_id': 'e83df36bebbe-1507037906.116',
                 'caller': CallerId(code=15001, number='+31150010001', is_public=True),

@@ -162,20 +162,6 @@ class Channel(object):
         return self.name.startswith('Local/')
 
     @property
-    def is_sip(self):
-        """
-        Whether the current channel is a SIP channel.
-
-        A connection to Asterisk consist of two parts, an internal connection
-        and an external connection. The internal connection is prefixed
-        with 'Local/', whereas a external connection is prefixed with 'SIP/'.
-
-        Returns:
-            bool: True if this channel is a SIP channel, false otherwise.
-        """
-        return self.name.startswith('SIP/')
-
-    @property
     def uniqueid(self):
         return self._id
 
@@ -268,7 +254,7 @@ class Channel(object):
         assert old_state != self._state
         self._trace('set_state {} -> {}'.format(old_state, self._state))
 
-        if self.is_sip:
+        if not self.is_local:
             if (
                     old_state == AST_STATE_DOWN and
                     self._state in (

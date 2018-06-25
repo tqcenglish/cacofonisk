@@ -27,12 +27,12 @@ class TestReporter(BaseReporter):
             'targets': targets,
         })
 
-    def on_warm_transfer(self, new_id, merged_id, redirector, caller, callee):
+    def on_attended_transfer(self, new_id, merged_id, redirector, caller, callee):
         self.events.append({
-            'event': 'on_warm_transfer',
+            'event': 'on_attended_transfer',
             'redirector': redirector,
             'caller': caller,
-            'callee': callee,
+            'target': callee,
             'new_id': new_id,
             'merged_id': merged_id,
         })

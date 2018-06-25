@@ -35,7 +35,7 @@ class BaseReporter(object):
         """
         pass
 
-    def on_warm_transfer(self, call_id, merged_id, redirector, caller, destination):
+    def on_attended_transfer(self, call_id, merged_id, redirector, caller, destination):
         """
         Gets invoked when an attended transfer is completed.
 
