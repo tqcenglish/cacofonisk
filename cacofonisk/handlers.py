@@ -326,7 +326,7 @@ class EventHandler(object):
                     merged_id=channel.uniqueid,
                     redirector=transferer.callerid,
                     caller=a_chan.callerid,
-                    to_number=transferer.exten,
+                    to_number=a_chan.exten,
                     targets=targets,
                 )
             elif a_chan.is_connectab:
@@ -474,19 +474,44 @@ class EventHandler(object):
             event (dict): The data of the AttendedTransfer event.
         """
         target_bridge = self._bridge_registry.get_by_uniqueid(
-            event['SecondBridgeUniqueid'])
+            event['DestBridgeUniqueid'])
         peer_one, peer_two = target_bridge.peers
 
-        # The transfer is done, the original bridge is empty and SecondBridge
+        # The transfer is done, the original bridge is empty and DestBridge
         # contain the channel we've transferred and the transfer target.
-        if peer_one.linkedid == event['OrigTransfererLinkedid']:
+        if peer_one.linkedid == peer_two.linkedid:
+            if peer_one.is_called_chan and peer_two.is_calling_chan:
+                transfer_source = peer_two
+                transfer_target = peer_one
+            elif peer_one.is_calling_chan and peer_two.is_called_chan:
+                transfer_source = peer_one
+                transfer_target = peer_two
+            else:
+                raise NotImplementedError(
+                    'Could not determine caller and target after attended '
+                    'transfer - identical linkedid and direction. '
+                    'OrigTransferer: {}. SecondTransferer: {}. '
+                    'Peers: {}. Event: {}.'.format(
+                        orig_transferer, second_transferer,
+                        target_bridge.peers, event,
+                    )
+                )
+        elif peer_one.linkedid == event['OrigTransfererLinkedid']:
             transfer_source = peer_one
             transfer_target = peer_two
         elif peer_two.linkedid == event['OrigTransfererLinkedid']:
             transfer_source = peer_two
             transfer_target = peer_one
         else:
-            raise AssertionError()
+            raise NotImplementedError(
+                'Could not determine caller and target after attended '
+                'transfer - OrigTransfererLinkedid not found. '
+                'OrigTransferer: {}. SecondTransferer: {}. Peers: {}. '
+                'Event: {}.'.format(
+                    orig_transferer, second_transferer,
+                    target_bridge.peers, event,
+                )
+            )
 
         transfer_source._side = 'A'
 
@@ -495,7 +520,7 @@ class EventHandler(object):
 
         self.on_attended_transfer(
             call_id=transfer_source.linkedid,
-            merged_id=transfer_target.linkedid,
+            merged_id=second_transferer.linkedid,
             redirector=second_transferer.callerid,
             caller=transfer_source.callerid,
             destination=transfer_target.callerid,
