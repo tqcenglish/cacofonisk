@@ -434,9 +434,9 @@ class EventHandler(object):
             which the redirector used to set up the call to the person to
             whom the call is being transferred.
         """
-        peer_one, peer_two = self._bridge_registry.get_by_uniqueid(
-            event['OrigBridgeUniqueid']
-        ).peers
+        orig_bridge = self._bridge_registry.get_by_uniqueid(
+            event['OrigBridgeUniqueid'])
+        peer_one, peer_two = orig_bridge.peers
 
         if peer_one.uniqueid == orig_transferer.uniqueid:
             transfer_source = peer_two
@@ -448,6 +448,8 @@ class EventHandler(object):
             )
 
         transfer_source._side = 'A'
+        transfer_source._is_picked_up = False
+        transfer_source._exten = second_transferer.exten
 
         targets = [c_chan.callerid for c_chan
                    in second_transferer.get_dialed_channels()]
