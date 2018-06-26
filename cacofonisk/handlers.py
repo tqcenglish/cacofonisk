@@ -413,8 +413,7 @@ class EventHandler(object):
                 b_chan = sip_peers[0]
 
             # Set a flag to prevent the event from being fired again.
-            # FIXME: Checking and setting is done on different channels?
-            a_chan._is_picked_up = True
+            channel._is_picked_up = True
 
             self.on_up(
                 call_id=event['Linkedid'],
