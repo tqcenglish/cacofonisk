@@ -89,8 +89,6 @@ class ChannelEventsTestCase(BaseTestCase):
     """
     Run event tests based on the JSON sample data.
     """
-    maxDiff = 8192
-
     def events_from_tuples(cls, tuples):
         """
         Convert a list of tuples to the expected event list.

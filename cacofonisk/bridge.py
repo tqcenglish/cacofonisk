@@ -16,24 +16,12 @@ class Bridge(object):
         channel = self._channel_manager._registry.get_by_uniqueid(event['Uniqueid'])
         self._peers.add(channel)
 
-        assert len(self) == int(event['BridgeNumChannels']), (
-            'BridgeNumChannels after enter does not match internal count, '
-            'Asterisk has {} but we have {}.'.format(
-                int(event['BridgeNumChannels']), len(self))
-        )
-
     def leave(self, event):
         channel = self._channel_manager._registry.get_by_uniqueid(event['Uniqueid'])
 
         assert channel in self._peers
 
         self._peers.remove(channel)
-
-        assert len(self) == int(event['BridgeNumChannels']), (
-            'BridgeNumChannels after leave does not match internal count, '
-            'Asterisk has {} but we have {}.'.format(
-                int(event['BridgeNumChannels']), len(self))
-        )
 
     @property
     def peers(self):
@@ -71,4 +59,11 @@ class BridgeRegistry(object):
         del self._bridges[event['BridgeUniqueid']]
 
     def get_by_uniqueid(self, uniqueid):
-        return self._bridges[uniqueid]
+        try:
+            return self._bridges[uniqueid]
+        except KeyError:
+            raise MissingBridgeUniqueid(uniqueid)
+
+
+class MissingBridgeUniqueid(KeyError):
+    pass

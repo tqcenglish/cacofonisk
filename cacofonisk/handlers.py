@@ -1,4 +1,4 @@
-from .bridge import BridgeRegistry
+from .bridge import BridgeRegistry, MissingBridgeUniqueid
 from .channel import Channel, ChannelRegistry, MissingChannel, MissingUniqueid
 from .constants import (
     AST_CAUSE_ANSWERED_ELSEWHERE,
@@ -128,6 +128,12 @@ class EventHandler(object):
             self._reporter.trace_msg(
                 'Channel with Uniqueid {} not in mem when processing event: '
                 '{!r}'.format(e.args[0], event))
+        except MissingBridgeUniqueid as e:
+            # Same...
+            self._reporter.trace_msg(
+                'Bridge with Uniqueid {} not in mem when processing event: '
+                '{!r}'.format(e.args[0], event)
+            )
 
         self._reporter.on_event(event)
 
