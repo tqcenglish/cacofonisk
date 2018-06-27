@@ -430,8 +430,8 @@ class Channel(object):
         Example event:
 
             <Message
-            Channel1='Local/ID2@osvpi_route_phoneaccount-00000006;1'
-            Channel2='Local/ID2@osvpi_route_phoneaccount-00000006;2'
+            LocalOneChannel='Local/ID2@osvpi_route_phoneaccount-00000006;1'
+            LocalTwoChannel='Local/ID2@osvpi_route_phoneaccount-00000006;2'
             Context='osvpi_route_phoneaccount' Event='LocalBridge'
             Exten='ID2' LocalOptimization='Yes' Privilege='call,all'
             Uniqueid1='vgua0-dev-1442239323.25'
@@ -737,7 +737,7 @@ class ChannelManager(object):
         'NewAccountCode', 'LocalBridge', 'Rename',
         'Bridge', 'Masquerade',
         # Higher level channel info.
-        'Dial', 'Hangup', 'Transfer',
+        'DialBegin', 'Hangup', 'Transfer',
         # Events related to tracking calls through queues.
         'AgentCalled',
         # UserEvents
@@ -794,7 +794,6 @@ class ChannelManager(object):
         self._reporter.trace_ami(event)
 
         event_name = event['Event']
-
         if event_name == 'FullyBooted':
             # Time to clear our channels because they are stale?
             self._reporter.trace_msg('Connected to Asterisk')
@@ -811,8 +810,8 @@ class ChannelManager(object):
             channel = self._registry.get_by_name(event['Channel'])
             channel.set_accountcode(event)
         elif event_name == 'LocalBridge':
-            channel = self._registry.get_by_name(event['Channel1'])
-            other = self._registry.get_by_name(event['Channel2'])
+            channel = self._registry.get_by_name(event['LocalOneChannel'])
+            other = self._registry.get_by_name(event['LocalTwoChannel'])
             channel.do_localbridge(other)
         elif event_name == 'Rename':
             channel = self._registry.get_by_name(event['Channel'])
@@ -820,13 +819,13 @@ class ChannelManager(object):
             channel.set_name(event['Newname'])
             self._registry.add(channel)
         elif event_name in 'Bridge':
-            channel1 = self._registry.get_by_name(event['Channel1'])
-            channel2 = self._registry.get_by_name(event['Channel2'])
+            LocalOneChannel = self._registry.get_by_name(event['LocalOneChannel'])
+            LocalTwoChannel = self._registry.get_by_name(event['LocalTwoChannel'])
 
             if event['Bridgestate'] == 'Link':
-                channel1.do_link(channel2)
+                LocalOneChannel.do_link(LocalTwoChannel)
             elif event['Bridgestate'] == 'Unlink':
-                channel1.do_unlink(channel2)
+                LocalOneChannel.do_unlink(LocalTwoChannel)
             else:
                 raise ValueError('Unrecognized Bridgestate: %s' % event)
         elif event_name == 'Masquerade':
@@ -856,24 +855,21 @@ class ChannelManager(object):
             channel = self._registry.get_by_name(event['Channel'])
             self._raw_hangup(channel, event)
 
-        elif event_name == 'Dial':
-            if event['SubEvent'] == 'Begin':
-                source = self._registry.get_by_uniqueid(event['UniqueID'])
-                target = self._registry.get_by_uniqueid(event['DestUniqueID'])
+        elif event_name == 'DialBegin':
+            source = self._registry.get_by_uniqueid(event['UniqueID'])
+            target = self._registry.get_by_uniqueid(event['DestUniqueID'])
 
-                # Verify target is not being dialed already.
-                assert not target.back_dial
+            # Verify target is not being dialed already.
+            assert not target.back_dial
 
-                # _fwd_dials is a list of channels being dialed by A.
-                source.fwd_dials.append(target)
+            # _fwd_dials is a list of channels being dialed by A.
+            source.fwd_dials.append(target)
 
-                # _back_dial is the channel dialing B.
-                target.back_dial = source
-            elif event['SubEvent'] == 'End':
-                # This is cleaned up after Hangup.
-                pass
-            else:
-                raise ValueError('Unrecognized Dial SubEvent: %s' % event)
+            # _back_dial is the channel dialing B.
+            target.back_dial = source
+        elif event_name  == 'DialEnd':
+            # This is cleaned up after Hangup.
+            pass
 
         elif event_name == 'Transfer':
             # Both TargetChannel and TargetUniqueid can be used to match
@@ -906,8 +902,8 @@ class ChannelManager(object):
             # IMPORTANT: This requires the `eventwhencalled` parameter to be
             # enabled on the Queue, or these events will not be raised (and
             # you'll get bogus data).
-            source = self._registry.get_by_name(event['ChannelCalling'])
-            target = self._registry.get_by_name(event['DestinationChannel'])
+            source = self._registry.get_by_name(event['Channel'])
+            target = self._registry.get_by_name(event['DestChannel'])
 
             assert not target.back_dial
 
