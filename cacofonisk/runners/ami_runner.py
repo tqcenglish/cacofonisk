@@ -81,7 +81,7 @@ class AmiRunner(object):
         """
         self.attach_all()
 
-        signal.signal(signal.SIGINT, self._close)
+        # signal.signal(signal.SIGINT, self._close)
 
         self.loop.run_forever()
 
